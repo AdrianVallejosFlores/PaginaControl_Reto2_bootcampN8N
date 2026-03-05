@@ -1,11 +1,15 @@
 const WEBHOOK_URL = "https://training.intersim.cloud/webhook/b3b3d576-d3b3-4171-92de-adf0ecafba93";
 
+const METRICS_WEBHOOK = "https://training.intersim.cloud/webhook/metricas";
+
 const HEADERS = {
     "Content-Type": "application/json",
     "x-api-key": "15252363avf$X"
 };
 
 document.getElementById("refreshBtn").addEventListener("click", loadTickets);
+
+document.getElementById("updateMetricsBtn").addEventListener("click", updateMetrics);
 
 // 🔵 FORMATEAR FECHA
 function formatDate(dateString){
@@ -136,6 +140,27 @@ async function deleteTicket(ticketId){
     }
 
 }
+
+// 📊 ACTUALIZAR METRICAS
+async function updateMetrics(){
+
+    try{
+
+        await fetch(METRICS_WEBHOOK,{
+            method:"POST",
+            headers:HEADERS
+        });
+
+        alert("Métricas actualizadas correctamente");
+
+    }catch(error){
+
+        console.error("Error actualizando métricas:",error);
+        alert("Error al actualizar métricas");
+
+    }
+}
+
 
 
 // Auto cargar

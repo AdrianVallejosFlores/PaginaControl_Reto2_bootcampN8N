@@ -1,55 +1,98 @@
 body{
-    font-family:Arial;
-    background:#f4f6f9;
-    padding:20px;
+    font-family: Arial;
+    background: #f4f6f9;
+    padding: 20px;
 }
 
 h1{
-    text-align:center;
+    text-align: center;
 }
+
+/* BARRA SUPERIOR */
 
 .top-bar{
-    text-align:center;
-    margin-bottom:20px;
+    display: flex;
+    align-items: center;
+    width: 100%;
 }
 
-#refreshBtn{
-    padding:10px 20px;
-    cursor:pointer;
-    font-size:16px;
+/* bloque de métricas a la derecha */
+
+.metrics-box{
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 15px;
 }
+
+/* LINK DASHBOARD */
+
+#metricsLink{
+    text-decoration: none;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+#metricsLink:hover{
+    text-decoration: underline;
+}
+
+/* ESTILO UNIFICADO DE BOTONES */
+
+#refreshBtn,
+#updateMetricsBtn{
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 15px;
+    transition: background 0.2s ease;
+}
+
+#refreshBtn:hover,
+#updateMetricsBtn:hover{
+    background-color: #2980b9;
+}
+
+/* TARJETAS DE TICKETS */
 
 .ticket{
-    background:white;
-    padding:15px;
-    margin-bottom:15px;
-    border-radius:8px;
-    box-shadow:0 2px 5px rgba(0,0,0,0.1);
+    background: white;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
 .ticket h3{
-    margin-top:0;
+    margin-top: 0;
 }
 
+/* ESTADOS */
+
 .escalado{
-    border-left:6px solid red;
+    border-left: 6px solid red;
 }
 
 .abierto{
-    border-left:6px solid orange;
+    border-left: 6px solid orange;
 }
 
 .cerrado{
-    border-left:6px solid green;
-    opacity:0.7;
+    border-left: 6px solid green;
+    opacity: 0.7;
 }
 
+/* BOTON CERRAR TICKET */
+
 button.close-btn{
-    background:red;
-    color:white;
-    border:none;
-    padding:8px 12px;
-    margin-top:10px;
-    cursor:pointer;
-    border-radius:4px;
+    background: red;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    margin-top: 10px;
+    cursor: pointer;
+    border-radius: 4px;
 }
