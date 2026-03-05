@@ -1,0 +1,55 @@
+body{
+    font-family:Arial;
+    background:#f4f6f9;
+    padding:20px;
+}
+
+h1{
+    text-align:center;
+}
+
+.top-bar{
+    text-align:center;
+    margin-bottom:20px;
+}
+
+#refreshBtn{
+    padding:10px 20px;
+    cursor:pointer;
+    font-size:16px;
+}
+
+.ticket{
+    background:white;
+    padding:15px;
+    margin-bottom:15px;
+    border-radius:8px;
+    box-shadow:0 2px 5px rgba(0,0,0,0.1);
+}
+
+.ticket h3{
+    margin-top:0;
+}
+
+.escalado{
+    border-left:6px solid red;
+}
+
+.abierto{
+    border-left:6px solid orange;
+}
+
+.cerrado{
+    border-left:6px solid green;
+    opacity:0.7;
+}
+
+button.close-btn{
+    background:red;
+    color:white;
+    border:none;
+    padding:8px 12px;
+    margin-top:10px;
+    cursor:pointer;
+    border-radius:4px;
+}
