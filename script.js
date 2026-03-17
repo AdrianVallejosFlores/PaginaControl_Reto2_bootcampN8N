@@ -1,6 +1,6 @@
-const WEBHOOK_URL = "https://training.intersim.cloud/webhook/obtener_registros";
+const WEBHOOK_URL = "https://training.intersim.cloud/webhook/obtener_registrosv2";
 
-const METRICS_WEBHOOK = "https://training.intersim.cloud/webhook/metricas";
+const METRICS_WEBHOOK = "https://training.intersim.cloud/webhook/metricasv2";
 
 const HEADERS = {
     "Content-Type": "application/json",
