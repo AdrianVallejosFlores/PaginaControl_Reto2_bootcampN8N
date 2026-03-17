@@ -1,4 +1,4 @@
-const WEBHOOK_URL = "https://training.intersim.cloud/webhook/b3b3d576-d3b3-4171-92de-adf0ecafba93";
+const WEBHOOK_URL = "https://training.intersim.cloud/webhook/obtener_registros";
 
 const METRICS_WEBHOOK = "https://training.intersim.cloud/webhook/metricas";
 
