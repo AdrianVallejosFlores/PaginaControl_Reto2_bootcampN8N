@@ -2,40 +2,257 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard de Tickets</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TecBolivia — Plataforma de Soporte</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<h1>Dashboard de Tickets :)</h1>
+<div class="shell">
 
-<div class="top-bar">
+    <!-- TOPBAR -->
+    <header class="topbar">
+        <div class="logo">TEC<span>Bolivia</span></div>
+        <div class="topbar-badge">E-Commerce Support</div>
 
-    <button id="refreshBtn">Actualizar Tickets</button>
+        <div class="topbar-right">
+            <button class="btn" id="updateMetricsBtn">Actualizar métricas</button>
+            <a class="btn btn-primary"
+               href="https://docs.google.com/spreadsheets/d/1DIZOee7j_iBkf1LUQKieNf01lJ9lQD4QNYqfUmyobhE/edit?usp=sharing"
+               target="_blank">
+               Ver Dashboard Google Sheet →
+            </a>
+            <div class="avatar">AD</div>
+        </div>
+    </header>
 
-    <div class="metrics-box">
-
-        <a id="metricsLink"
-           href="https://docs.google.com/spreadsheets/d/1DIZOee7j_iBkf1LUQKieNf01lJ9lQD4QNYqfUmyobhE/edit?usp=sharing"
-           target="_blank">
-
-           📊 Ver Dashboard de Métricas Generales
-
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="nav-section">General</div>
+        <a class="nav-item active" href="#">
+            <span class="icon">◈</span> Tickets
+            <span class="nav-badge" id="openCount">—</span>
+        </a>
+        <a class="nav-item disabled" href="#">
+            <span class="icon">◎</span> Clientes
+            <span class="nav-badge neutral">soon</span>
+        </a>
+        <a class="nav-item disabled" href="#">
+            <span class="icon">◇</span> Conversaciones
+            <span class="nav-badge neutral">soon</span>
         </a>
 
-        <button id="updateMetricsBtn">
-            Actualizar Métricas
-        </button>
+        <div class="nav-section">Análisis</div>
+        <a class="nav-item disabled" href="#">
+            <span class="icon">∷</span> Métricas Agentes
+            <span class="nav-badge neutral">soon</span>
+        </a>
+        <a class="nav-item disabled" href="#">
+            <span class="icon">≋</span> Reportes
+            <span class="nav-badge neutral">soon</span>
+        </a>
 
-    </div>
+        <div class="nav-section">Sistema</div>
+        <a class="nav-item disabled" href="#">
+            <span class="icon">⚙</span> Configuración
+            <span class="nav-badge neutral">soon</span>
+        </a>
 
+        <div class="sidebar-bottom">
+            <div class="nav-item">
+                <span class="icon">◉</span> Admin
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+
+        <!-- BREADCRUMB -->
+        <nav class="breadcrumb" id="breadcrumb">
+            <span class="bc-item bc-home">Inicio</span>
+            <span class="bc-sep">›</span>
+            <span class="bc-item bc-active" id="bcCurrent">Tickets</span>
+        </nav>
+
+        <div class="page-header">
+            <div>
+                <div class="page-title">Tickets de soporte</div>
+                <div class="page-sub" id="lastUpdated">Cargando datos…</div>
+            </div>
+        </div>
+
+        <!-- STAT CARDS -->
+        <div class="stats-row">
+            <div class="stat-card red fade-in">
+                <div class="stat-label">Escalados</div>
+                <div class="stat-value" id="statEscalado">—</div>
+                <div class="stat-delta">Requieren atención inmediata</div>
+            </div>
+            <div class="stat-card amber fade-in">
+                <div class="stat-label">Abiertos</div>
+                <div class="stat-value" id="statAbierto">—</div>
+                <div class="stat-delta">En proceso</div>
+            </div>
+            <div class="stat-card green fade-in">
+                <div class="stat-label">Cerrados</div>
+                <div class="stat-value" id="statCerrado">—</div>
+                <div class="stat-delta">Resueltos</div>
+            </div>
+            <div class="stat-card blue fade-in">
+                <div class="stat-label">Total</div>
+                <div class="stat-value" id="statTotal">—</div>
+                <div class="stat-delta">Tickets registrados</div>
+            </div>
+        </div>
+
+        <!-- CONTENT GRID -->
+        <div class="content-grid">
+
+            <!-- TABLA DE TICKETS -->
+            <div class="panel">
+                <div class="panel-header">
+                    <div>
+                        <div class="panel-title">Todos los tickets</div>
+                        <div class="panel-sub">Click en un ticket para responder</div>
+                    </div>
+                    <button class="panel-action" onclick="loadTickets()">Actualizar ↻</button>
+                </div>
+
+                <div class="ticket-row-header">
+                    <span>ID</span>
+                    <span>Mensaje</span>
+                    <span>Urgencia</span>
+                    <span>Estado</span>
+                    <span>Sentim.</span>
+                </div>
+
+                <div class="ticket-list" id="ticketsContainer">
+                    <div class="loading-row">
+                        <div class="skel" style="width:70px"></div>
+                        <div class="skel" style="flex:1"></div>
+                        <div class="skel" style="width:60px"></div>
+                        <div class="skel" style="width:80px"></div>
+                    </div>
+                    <div class="loading-row">
+                        <div class="skel" style="width:70px"></div>
+                        <div class="skel" style="flex:1"></div>
+                        <div class="skel" style="width:60px"></div>
+                        <div class="skel" style="width:80px"></div>
+                    </div>
+                    <div class="loading-row">
+                        <div class="skel" style="width:70px"></div>
+                        <div class="skel" style="flex:1"></div>
+                        <div class="skel" style="width:60px"></div>
+                        <div class="skel" style="width:80px"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANELES LATERALES -->
+            <div class="side-panels">
+
+                <!-- Distribución -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title">Distribución</div>
+                    </div>
+                    <div class="donut-wrap">
+                        <svg class="donut" viewBox="0 0 36 36" id="donutSvg">
+                            <circle cx="18" cy="18" r="14" fill="none"
+                                stroke="#252528" stroke-width="5"/>
+                            <circle id="arcEscalado" cx="18" cy="18" r="14" fill="none"
+                                stroke="#e05252" stroke-width="5"
+                                stroke-dasharray="0 88" stroke-linecap="round"
+                                transform="rotate(-90 18 18)" />
+                            <circle id="arcAbierto" cx="18" cy="18" r="14" fill="none"
+                                stroke="#d4914a" stroke-width="5"
+                                stroke-dasharray="0 88" stroke-linecap="round"
+                                transform="rotate(-90 18 18)" />
+                            <circle id="arcCerrado" cx="18" cy="18" r="14" fill="none"
+                                stroke="#4aad7a" stroke-width="5"
+                                stroke-dasharray="0 88" stroke-linecap="round"
+                                transform="rotate(-90 18 18)" />
+                        </svg>
+                        <div class="donut-legend">
+                            <div class="legend-row">
+                                <span class="legend-label">
+                                    <span class="legend-dot" style="background:var(--red)"></span>Escalados
+                                </span>
+                                <span class="legend-val" id="legEsc">—</span>
+                            </div>
+                            <div class="legend-row">
+                                <span class="legend-label">
+                                    <span class="legend-dot" style="background:var(--amber)"></span>Abiertos
+                                </span>
+                                <span class="legend-val" id="legAb">—</span>
+                            </div>
+                            <div class="legend-row">
+                                <span class="legend-label">
+                                    <span class="legend-dot" style="background:var(--green)"></span>Cerrados
+                                </span>
+                                <span class="legend-val" id="legCer">—</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actividad reciente -->
+                <div class="panel" style="flex:1">
+                    <div class="panel-header">
+                        <div class="panel-title">Actividad reciente</div>
+                    </div>
+                    <div class="feed-list" id="feedList">
+                        <div class="feed-item">
+                            <div class="feed-time">Cargando…</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
 </div>
 
-<div id="ticketsContainer">
-    <p>Cargando tickets...</p>
+<!-- ═══════════════ MODAL ═══════════════ -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+    <div class="modal">
+
+        <div class="modal-header">
+            <div>
+                <div class="modal-title" id="modalTicketId">TCK-0000</div>
+                <div class="modal-sub" id="modalTicketMsg">—</div>
+            </div>
+            <button class="modal-close" onclick="closeModalDirect()">✕</button>
+        </div>
+
+        <div class="modal-meta" id="modalMeta">
+            <!-- badges: urgencia, estado, sentimiento -->
+        </div>
+
+        <div class="modal-body">
+            <label class="modal-label">Respuesta al cliente</label>
+            <textarea
+                id="modalRespuesta"
+                class="modal-textarea"
+                placeholder="Escribe aquí la respuesta para el cliente…"
+                rows="4"
+            ></textarea>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn" onclick="closeModalDirect()">Cancelar</button>
+            <button class="btn btn-primary" id="modalSendBtn" onclick="resolverTicket()">
+                Enviar respuesta →
+            </button>
+        </div>
+
+    </div>
 </div>
 
 <script src="script.js"></script>
-
 </body>
 </html>

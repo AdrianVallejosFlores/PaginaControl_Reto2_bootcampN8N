@@ -1,167 +1,280 @@
-const WEBHOOK_URL = "https://training.intersim.cloud/webhook/obtener_registrosv2";
-
+const WEBHOOK_URL     = "https://training.intersim.cloud/webhook/gestionar_tickets";
 const METRICS_WEBHOOK = "https://training.intersim.cloud/webhook/metricasv2";
-
 const HEADERS = {
     "Content-Type": "application/json",
     "x-api-key": "15252363avf$X"
 };
 
-document.getElementById("refreshBtn").addEventListener("click", loadTickets);
+const SENTIMENTS = { positivo: "😊", neutro: "😐", negativo: "😞" };
 
+// Variable para guardar el ticket activo en el modal
+let ticketActivo = null;
+
+document.getElementById("refreshBtn")?.addEventListener("click", loadTickets);
 document.getElementById("updateMetricsBtn").addEventListener("click", updateMetrics);
 
 // 🔵 FORMATEAR FECHA
-function formatDate(dateString){
+function formatDate(d) {
+    if (!d) return "—";
+    return new Date(d).toLocaleString("es-BO", { timeZone: "America/La_Paz" });
+}
 
-    if(!dateString) return "—";
-
-    const date = new Date(dateString);
-
-    return date.toLocaleString("es-BO", {
-        timeZone: "America/La_Paz"
+function shortDate(d) {
+    if (!d) return "—";
+    return new Date(d).toLocaleDateString("es-BO", {
+        timeZone: "America/La_Paz",
+        day: "2-digit",
+        month: "short"
     });
 }
 
-
-// 🔵 SOLICITAR TICKETS
-async function loadTickets(){
+// 🔵 CARGAR TICKETS
+async function loadTickets() {
 
     const container = document.getElementById("ticketsContainer");
-    container.innerHTML = "Cargando tickets...";
+    container.innerHTML = `
+        <div class="loading-row">
+            <div class="skel" style="width:70px"></div>
+            <div class="skel" style="flex:1"></div>
+            <div class="skel" style="width:60px"></div>
+            <div class="skel" style="width:80px"></div>
+        </div>
+        <div class="loading-row">
+            <div class="skel" style="width:70px"></div>
+            <div class="skel" style="flex:1"></div>
+            <div class="skel" style="width:60px"></div>
+            <div class="skel" style="width:80px"></div>
+        </div>
+        <div class="loading-row">
+            <div class="skel" style="width:70px"></div>
+            <div class="skel" style="flex:1"></div>
+            <div class="skel" style="width:60px"></div>
+            <div class="skel" style="width:80px"></div>
+        </div>`;
 
-    try{
-
-        const response = await fetch(WEBHOOK_URL,{
-            method:"POST",
-            headers:HEADERS,
-            body:JSON.stringify({
-                PETICION:"SOLICITAR TICKETS"
-            })
+    try {
+        const res = await fetch(WEBHOOK_URL, {
+            method: "POST",
+            headers: HEADERS,
+            body: JSON.stringify({ PETICION: "SOLICITAR TICKETS" })
         });
 
-        let tickets = await response.json();
+        let tickets = await res.json();
+        if (!Array.isArray(tickets)) tickets = [tickets];
 
-        // Si el webhook devuelve un solo objeto lo convertimos en array
-        if (!Array.isArray(tickets)) {
-            tickets = [tickets];
-        }
-
-        if(!tickets || tickets.length === 0){
-            container.innerHTML = "<p>No hay tickets registrados</p>";
+        if (!tickets || tickets.length === 0) {
+            container.innerHTML = `<div class="empty">No hay tickets registrados</div>`;
             return;
         }
 
+        updateStats(tickets);
+        updateDonut(tickets);
         renderTickets(tickets);
+        renderFeed(tickets);
 
-    }catch(error){
-
-        container.innerHTML = "<p>Error cargando tickets</p>";
+    } catch (error) {
+        container.innerHTML = `<div class="empty">Error cargando tickets</div>`;
         console.error(error);
-
     }
 }
 
+// 🟢 ACTUALIZAR ESTADÍSTICAS
+function updateStats(tickets) {
+    const esc = tickets.filter(t => t.estado === "ESCALADO").length;
+    const ab  = tickets.filter(t => t.estado === "ABIERTO").length;
+    const cer = tickets.filter(t => t.estado === "CERRADO").length;
+    const tot = tickets.length;
 
-// 🟢 RENDERIZAR
-function renderTickets(tickets){
+    document.getElementById("statEscalado").textContent = esc;
+    document.getElementById("statAbierto").textContent  = ab;
+    document.getElementById("statCerrado").textContent  = cer;
+    document.getElementById("statTotal").textContent    = tot;
+    document.getElementById("openCount").textContent    = esc + ab;
+    document.getElementById("lastUpdated").textContent  = "Actualizado: " + new Date().toLocaleTimeString("es-BO");
 
-    const container = document.getElementById("ticketsContainer");
-    container.innerHTML = "";
-
-    const orden = {
-        ESCALADO:1,
-        ABIERTO:2,
-        CERRADO:3
-    };
-
-    tickets.sort((a,b)=>orden[a.estado] - orden[b.estado]);
-
-    tickets.forEach(ticket=>{
-
-        const estadoClass = ticket.estado.toLowerCase();
-
-        const div = document.createElement("div");
-        div.classList.add("ticket",estadoClass);
-
-        div.innerHTML = `
-            <h3>${ticket.ticket_id || "Sin ID"}</h3>
-
-            <p><strong>Cliente:</strong> ${ticket.cliente_id || "—"}</p>
-
-            <p><strong>Mensaje:</strong> ${ticket.mensaje || "Sin mensaje"}</p>
-
-            <p><strong>Urgencia:</strong> ${ticket.urgencia || "—"}</p>
-
-            <p><strong>Estado:</strong> ${ticket.estado}</p>
-
-            <p><strong>Creado:</strong> ${formatDate(ticket.fecha_creacion)}</p>
-
-            <p><strong>Cierre:</strong> ${formatDate(ticket.fecha_cierre)}</p>
-
-            ${
-                ticket.estado !== "CERRADO"
-                ?
-                `<button class="close-btn" onclick="deleteTicket('${ticket.ticket_id}')">
-                    ❌ Eliminar Ticket
-                </button>`
-                :
-                ""
-            }
-        `;
-
-        container.appendChild(div);
-
-    });
+    document.getElementById("legEsc").textContent = esc;
+    document.getElementById("legAb").textContent  = ab;
+    document.getElementById("legCer").textContent = cer;
 }
 
+// 🟢 ACTUALIZAR DONUT
+function updateDonut(tickets) {
+    const esc = tickets.filter(t => t.estado === "ESCALADO").length;
+    const ab  = tickets.filter(t => t.estado === "ABIERTO").length;
+    const cer = tickets.filter(t => t.estado === "CERRADO").length;
+    const tot = tickets.length;
 
+    const circ = 2 * Math.PI * 14;
+    const gap  = 1;
+    const pEsc = (esc / tot) * circ;
+    const pAb  = (ab  / tot) * circ;
+    const pCer = (cer / tot) * circ;
 
-// 🔴 ELIMINAR TICKET
-async function deleteTicket(ticketId){
+    document.getElementById("arcEscalado").setAttribute("stroke-dasharray", `${pEsc - gap} ${circ - (pEsc - gap)}`);
+    document.getElementById("arcAbierto").setAttribute("stroke-dasharray",  `${pAb  - gap} ${circ - (pAb  - gap)}`);
+    document.getElementById("arcAbierto").setAttribute("stroke-dashoffset", -(pEsc));
+    document.getElementById("arcCerrado").setAttribute("stroke-dasharray",  `${pCer - gap} ${circ - (pCer - gap)}`);
+    document.getElementById("arcCerrado").setAttribute("stroke-dashoffset", -(pEsc + pAb));
+}
 
-    try{
+// 🟢 RENDERIZAR TABLA
+function renderTickets(tickets) {
+    const container = document.getElementById("ticketsContainer");
+    const orden = { ESCALADO: 1, ABIERTO: 2, CERRADO: 3 };
+    tickets.sort((a, b) => orden[a.estado] - orden[b.estado]);
 
-        await fetch(WEBHOOK_URL,{
-            method:"POST",
-            headers:HEADERS,
-            body:JSON.stringify({
-                PETICION:"eliminar ticket",
-                ticket_id:ticketId
+    container.innerHTML = tickets.map(t => `
+        <div class="ticket-row" onclick="openModal(${JSON.stringify(t).replace(/"/g, '&quot;')})">
+            <span class="tid">${t.ticket_id || "—"}</span>
+            <span class="tmsg">${t.mensaje || "Sin mensaje"}</span>
+            <span class="turg ${(t.urgencia || "").toLowerCase()}">${t.urgencia || "—"}</span>
+            <span><span class="badge ${(t.estado || "").toLowerCase()}">${t.estado || "—"}</span></span>
+            <span class="tsentiment">${SENTIMENTS[t.sentimiento] || "—"}</span>
+        </div>`).join("");
+}
+
+// 🟢 RENDERIZAR FEED
+function renderFeed(tickets) {
+    const feed = document.getElementById("feedList");
+    feed.innerHTML = tickets.slice(0, 6).map(t => `
+        <div class="feed-item">
+            <div class="feed-time">${shortDate(t.fecha_creacion)} · ${t.tipo_cliente || "Cliente"}</div>
+            <div class="feed-msg">
+                <strong>${t.ticket_id}</strong> — ${(t.mensaje || "").substring(0, 60)}…
+            </div>
+        </div>`).join("");
+}
+
+// ═══════════════════════════════════════
+// 🟣 MODAL
+// ═══════════════════════════════════════
+
+function openModal(ticket) {
+    ticketActivo = ticket;
+
+    // Breadcrumb
+    document.getElementById("bcCurrent").textContent = ticket.ticket_id;
+
+    // Contenido del modal
+    document.getElementById("modalTicketId").textContent = ticket.ticket_id || "—";
+    document.getElementById("modalTicketMsg").textContent = ticket.mensaje || "Sin mensaje";
+    document.getElementById("modalRespuesta").value = "";
+
+    // Meta badges
+    document.getElementById("modalMeta").innerHTML = `
+        <span class="badge ${(ticket.estado || "").toLowerCase()}">${ticket.estado || "—"}</span>
+        <span class="turg ${(ticket.urgencia || "").toLowerCase()}" style="font-size:12px;font-weight:600">
+            ${ticket.urgencia || "—"}
+        </span>
+        <span style="font-size:16px">${SENTIMENTS[ticket.sentimiento] || "—"}</span>
+        <span style="font-size:12px;color:var(--sub)">${ticket.tipo_cliente || ""}</span>
+    `;
+
+    // Mostrar modal
+    document.getElementById("modalOverlay").classList.add("open");
+    setTimeout(() => document.getElementById("modalRespuesta").focus(), 100);
+}
+
+function closeModal(e) {
+    // Solo cierra si se clickeó el overlay (fondo), no el modal en sí
+    if (e.target === document.getElementById("modalOverlay")) {
+        closeModalDirect();
+    }
+}
+
+function closeModalDirect() {
+    document.getElementById("modalOverlay").classList.remove("open");
+    document.getElementById("bcCurrent").textContent = "Tickets";
+    ticketActivo = null;
+}
+
+// Cerrar con ESC
+document.addEventListener("keydown", e => {
+    if (e.key === "Escape") closeModalDirect();
+});
+
+// ═══════════════════════════════════════
+// 🟣 RESOLVER TICKET (flujo completo)
+// ═══════════════════════════════════════
+
+async function resolverTicket() {
+    if (!ticketActivo) return;
+
+    const respuesta = document.getElementById("modalRespuesta").value.trim();
+    if (!respuesta) {
+        document.getElementById("modalRespuesta").focus();
+        document.getElementById("modalRespuesta").style.borderColor = "var(--red)";
+        return;
+    }
+
+    // Reset borde
+    document.getElementById("modalRespuesta").style.borderColor = "";
+
+    const btn = document.getElementById("modalSendBtn");
+    btn.textContent = "Enviando…";
+    btn.disabled = true;
+
+    try {
+        // PASO 1 — Resolver ticket escalado
+        await fetch(WEBHOOK_URL, {
+            method: "POST",
+            headers: HEADERS,
+            body: JSON.stringify({
+                PETICION: "RESOLVER TICKET ESCALADO",
+                ticket_id: ticketActivo.ticket_id,
+                respuesta: respuesta
             })
         });
 
-        loadTickets();
-
-    }catch(error){
-
-        console.error("Error eliminando ticket:",error);
-
-    }
-
-}
-
-// 📊 ACTUALIZAR METRICAS
-async function updateMetrics(){
-
-    try{
-
-        await fetch(METRICS_WEBHOOK,{
-            method:"POST",
-            headers:HEADERS
+        // PASO 2 — Eliminar ticket
+        await fetch(WEBHOOK_URL, {
+            method: "POST",
+            headers: HEADERS,
+            body: JSON.stringify({
+                PETICION: "eliminar ticket",
+                ticket_id: ticketActivo.ticket_id
+            })
         });
 
-        alert("Métricas actualizadas correctamente");
+        // Cerrar modal y recargar
+        closeModalDirect();
+        loadTickets();
 
-    }catch(error){
-
-        console.error("Error actualizando métricas:",error);
-        alert("Error al actualizar métricas");
-
+    } catch (error) {
+        console.error("Error resolviendo ticket:", error);
+        btn.textContent = "Error — reintentar";
+        btn.disabled = false;
     }
 }
 
+// 🔴 ELIMINAR TICKET
+async function deleteTicket(ticketId) {
+    try {
+        await fetch(WEBHOOK_URL, {
+            method: "POST",
+            headers: HEADERS,
+            body: JSON.stringify({ PETICION: "eliminar ticket", ticket_id: ticketId })
+        });
+        loadTickets();
+    } catch (error) {
+        console.error("Error eliminando ticket:", error);
+    }
+}
 
+// 📊 ACTUALIZAR MÉTRICAS
+async function updateMetrics() {
+    try {
+        await fetch(METRICS_WEBHOOK, {
+            method: "POST",
+            headers: HEADERS,
+            body: JSON.stringify({ PETICION: "ACTUALIZAR METRICAS" })
+        });
+        alert("Métricas actualizadas correctamente");
+    } catch (error) {
+        console.error("Error actualizando métricas:", error);
+        alert("Error al actualizar métricas");
+    }
+}
 
 // Auto cargar
 loadTickets();
