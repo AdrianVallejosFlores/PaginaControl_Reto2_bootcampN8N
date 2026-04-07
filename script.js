@@ -118,25 +118,79 @@ function updateDonut(tickets) {
 }
 
 // 🟢 RENDERIZAR TABLA
+// ⚠️ Solo los tickets ESCALADOS son clickeables — ABIERTOS y CERRADOS quedan bloqueados
 function renderTickets(tickets) {
     const container = document.getElementById("ticketsContainer");
     const orden = { ESCALADO: 1, ABIERTO: 2, CERRADO: 3 };
     tickets.sort((a, b) => orden[a.estado] - orden[b.estado]);
 
-    container.innerHTML = tickets.map(t => `
-        <div class="ticket-row" onclick="openModal(${JSON.stringify(t).replace(/"/g, '&quot;')})">
+    container.innerHTML = tickets.map(t => {
+        const esEscalado = t.estado === "ESCALADO";
+
+        const clickAttr = esEscalado
+            ? `onclick="openModal(${JSON.stringify(t).replace(/"/g, '&quot;')})"` 
+            : `onclick="ticketBloqueado()"`;
+
+        const lockedClass = esEscalado ? "" : "ticket-locked";
+
+        return `
+        <div class="ticket-row ${lockedClass}" ${clickAttr}>
             <span class="tid">${t.ticket_id || "—"}</span>
             <span class="tmsg">${t.mensaje || "Sin mensaje"}</span>
             <span class="turg ${(t.urgencia || "").toLowerCase()}">${t.urgencia || "—"}</span>
             <span><span class="badge ${(t.estado || "").toLowerCase()}">${t.estado || "—"}</span></span>
             <span class="tsentiment">${SENTIMENTS[t.sentimiento] || "—"}</span>
-        </div>`).join("");
+        </div>`;
+    }).join("");
+}
+
+// 🔒 FEEDBACK cuando se intenta click en ticket no escalado
+function ticketBloqueado() {
+    // Evita duplicar el toast si ya hay uno visible
+    if (document.getElementById("lockedToast")) return;
+
+    const toast = document.createElement("div");
+    toast.id = "lockedToast";
+    toast.textContent = "⚠️  Solo se pueden gestionar tickets ESCALADOS";
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 28px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--surface);
+        color: var(--sub);
+        font-family: 'DM Sans', sans-serif;
+        font-size: 13px;
+        font-weight: 500;
+        padding: 11px 22px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        z-index: 9999;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity .2s ease;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    `;
+    document.body.appendChild(toast);
+
+    // Fade in
+    requestAnimationFrame(() => { toast.style.opacity = "1"; });
+
+    // Fade out y eliminar
+    setTimeout(() => {
+        toast.style.opacity = "0";
+        setTimeout(() => toast.remove(), 250);
+    }, 2200);
 }
 
 // 🟢 RENDERIZAR FEED
 function renderFeed(tickets) {
     const feed = document.getElementById("feedList");
-    feed.innerHTML = tickets.slice(0, 6).map(t => `
+    
+    // ← AGREGA ESTO: ordena por fecha más reciente primero
+    const sorted = [...tickets].sort((a, b) => new Date(b.fecha_creacion) - new Date(a.fecha_creacion));
+    // const feed = document.getElementById("feedList");
+    feed.innerHTML = sorted.slice(0, 6).map(t => `
         <div class="feed-item">
             <div class="feed-time">${shortDate(t.fecha_creacion)} · ${t.tipo_cliente || "Cliente"}</div>
             <div class="feed-msg">
@@ -150,6 +204,9 @@ function renderFeed(tickets) {
 // ═══════════════════════════════════════
 
 function openModal(ticket) {
+    // Guardia extra: solo ESCALADOS pueden abrir el modal
+    if (ticket.estado !== "ESCALADO") return;
+
     ticketActivo = ticket;
 
     // Breadcrumb
@@ -159,6 +216,9 @@ function openModal(ticket) {
     document.getElementById("modalTicketId").textContent = ticket.ticket_id || "—";
     document.getElementById("modalTicketMsg").textContent = ticket.mensaje || "Sin mensaje";
     document.getElementById("modalRespuesta").value = "";
+
+    // Reset borde por si quedó en rojo de intento anterior
+    document.getElementById("modalRespuesta").style.borderColor = "";
 
     // Meta badges
     document.getElementById("modalMeta").innerHTML = `
@@ -176,7 +236,6 @@ function openModal(ticket) {
 }
 
 function closeModal(e) {
-    // Solo cierra si se clickeó el overlay (fondo), no el modal en sí
     if (e.target === document.getElementById("modalOverlay")) {
         closeModalDirect();
     }
@@ -185,6 +244,12 @@ function closeModal(e) {
 function closeModalDirect() {
     document.getElementById("modalOverlay").classList.remove("open");
     document.getElementById("bcCurrent").textContent = "Tickets";
+
+    // Reset botón por si quedó en estado "Enviando…"
+    const btn = document.getElementById("modalSendBtn");
+    btn.textContent = "Enviar respuesta →";
+    btn.disabled = false;
+
     ticketActivo = null;
 }
 
@@ -199,6 +264,12 @@ document.addEventListener("keydown", e => {
 
 async function resolverTicket() {
     if (!ticketActivo) return;
+
+    // Guardia extra por si acaso
+    if (ticketActivo.estado !== "ESCALADO") {
+        ticketBloqueado();
+        return;
+    }
 
     const respuesta = document.getElementById("modalRespuesta").value.trim();
     if (!respuesta) {
