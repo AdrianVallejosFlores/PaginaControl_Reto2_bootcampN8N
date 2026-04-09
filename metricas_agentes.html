@@ -329,7 +329,7 @@
             <div class="panel-header">
                 <div>
                     <div class="panel-title">Top interacciones por costo</div>
-                    <div class="panel-sub">Las 20 más costosas del sistema</div>
+                    
                 </div>
             </div>
             <div class="table-scroll">
@@ -760,7 +760,7 @@ function renderModelos(data, total) {
 // ── TABLA TOP INTERACCIONES ────────────────────────────────────────────────
 function renderInterTable(data) {
     const sorted = [...data].sort((a,b) => parseCosto(b.costo_estimado)-parseCosto(a.costo_estimado));
-    const top20  = sorted.slice(0,20);
+    const top20  = sorted.slice(0,1000);
 
     const costoClass = c => {
         const s = (c||"").toUpperCase();
