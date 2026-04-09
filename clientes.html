@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clientes — TecBolivia Support</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* ── OVERRIDES PÁGINA CLIENTES ── */
+        .stats-row { grid-template-columns: repeat(5, 1fr); }
+
+        /* ── CHARTS ROW ── */
+        .charts-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+
+        .chart-panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 18px 20px;
+        }
+
+        .chart-title {
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 14px;
+        }
+
+        /* ── MINI BAR ── */
+        .bar-list { display: flex; flex-direction: column; gap: 10px; }
+        .bar-item-label {
+            display: flex; justify-content: space-between;
+            font-size: 12px; color: var(--sub); margin-bottom: 4px;
+        }
+        .bar-item-label span:last-child { color: var(--text); font-weight: 600; }
+        .bar-track {
+            height: 6px; background: var(--border); border-radius: 10px; overflow: hidden;
+        }
+        .bar-fill {
+            height: 100%; border-radius: 10px; transition: width .6s ease;
+        }
+
+        /* ── DONUT MINI ── */
+        .donut-mini-wrap {
+            display: flex; align-items: center; gap: 16px;
+        }
+        .donut-mini { width: 90px; height: 90px; flex-shrink: 0; }
+        .donut-mini-legend { flex: 1; display: flex; flex-direction: column; gap: 7px; }
+        .dml-row {
+            display: flex; align-items: center; justify-content: space-between;
+            font-size: 12px;
+        }
+        .dml-label { display: flex; align-items: center; gap: 7px; color: var(--sub); }
+        .dml-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+        .dml-val { font-weight: 600; color: var(--text); }
+
+        /* ── TABLA CLIENTES ── */
+        .full-panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .table-toolbar {
+            display: flex; align-items: center; gap: 10px;
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            display: flex; align-items: center; gap: 8px;
+            background: var(--bg); border: 1px solid var(--border);
+            border-radius: 7px; padding: 6px 12px; flex: 1; min-width: 180px;
+            transition: border-color .15s;
+        }
+        .search-box:focus-within { border-color: var(--muted); }
+        .search-box input {
+            background: none; border: none; outline: none;
+            font-family: 'DM Sans', sans-serif; font-size: 13px;
+            color: var(--text); width: 100%;
+        }
+        .search-box input::placeholder { color: var(--muted); }
+        .search-icon { color: var(--muted); font-size: 13px; flex-shrink: 0; }
+
+        .filter-select {
+            background: var(--bg); border: 1px solid var(--border);
+            border-radius: 7px; padding: 7px 12px;
+            font-family: 'DM Sans', sans-serif; font-size: 12.5px;
+            color: var(--sub); outline: none; cursor: pointer;
+            transition: border-color .15s;
+        }
+        .filter-select:focus { border-color: var(--muted); }
+
+        .toolbar-right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+        .rec-count { font-size: 12px; color: var(--muted); }
+
+        /* ── TABLE ── */
+        .data-table { width: 100%; border-collapse: collapse; }
+
+        .data-table thead tr {
+            border-bottom: 1px solid var(--border);
+        }
+
+        .data-table th {
+            padding: 10px 16px;
+            font-size: 10.5px; font-weight: 700;
+            letter-spacing: 0.7px; text-transform: uppercase;
+            color: var(--muted); text-align: left;
+            white-space: nowrap; cursor: pointer; user-select: none;
+            transition: color .15s;
+        }
+        .data-table th:hover { color: var(--sub); }
+        .data-table th.sorted { color: var(--text); }
+        .sort-arrow { margin-left: 4px; font-size: 9px; }
+
+        .data-table tbody tr {
+            border-bottom: 1px solid var(--border);
+            transition: background .12s;
+            cursor: default;
+        }
+        .data-table tbody tr:last-child { border-bottom: none; }
+        .data-table tbody tr:hover { background: rgba(255,255,255,.025); }
+
+        .data-table td {
+            padding: 11px 16px;
+            font-size: 12.5px; color: var(--sub);
+            vertical-align: middle;
+        }
+
+        .td-ticket {
+            font-family: 'Syne', sans-serif;
+            font-size: 12px; font-weight: 700;
+            color: var(--blue);
+        }
+        .td-nombre { color: var(--text); font-weight: 500; }
+        .td-ci {
+            font-family: 'DM Sans', monospace;
+            font-size: 11.5px; color: var(--muted);
+        }
+        .td-correo { font-size: 11.5px; }
+        .td-msg {
+            max-width: 220px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            font-size: 12px; color: var(--sub);
+        }
+
+        .urg-badge {
+            font-size: 10.5px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.3px;
+        }
+        .urg-badge.alta  { color: var(--red); }
+        .urg-badge.media { color: var(--amber); }
+        .urg-badge.baja  { color: var(--green); }
+
+        .tipo-badge {
+            font-size: 10px; font-weight: 700;
+            padding: 2px 8px; border-radius: 20px;
+            text-transform: uppercase; letter-spacing: 0.3px;
+        }
+        .tipo-badge.vip {
+            background: rgba(212,145,74,.15);
+            color: var(--amber);
+            border: 1px solid rgba(212,145,74,.25);
+        }
+        .tipo-badge.estandar {
+            background: rgba(90,158,212,.12);
+            color: var(--blue);
+            border: 1px solid rgba(90,158,212,.2);
+        }
+
+        .sent-emoji { font-size: 16px; }
+
+        .td-fecha { font-size: 11px; white-space: nowrap; }
+
+        /* ── EMPTY / LOADING ── */
+        .table-empty {
+            padding: 52px 20px; text-align: center;
+            color: var(--muted); font-size: 13px;
+        }
+        .table-empty-icon { font-size: 32px; margin-bottom: 10px; opacity: .4; }
+
+        /* ── PAGINATION ── */
+        .table-pagination {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 20px; border-top: 1px solid var(--border);
+            font-size: 12px; color: var(--muted);
+        }
+        .pag-btns { display: flex; gap: 4px; }
+        .pag-btn {
+            width: 30px; height: 30px; border-radius: 6px;
+            background: var(--bg); border: 1px solid var(--border);
+            color: var(--sub); font-size: 12px; font-family: 'DM Sans', sans-serif;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: all .15s;
+        }
+        .pag-btn:hover, .pag-btn.active {
+            border-color: var(--muted); color: var(--text); background: var(--border);
+        }
+        .pag-btn.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+        .pag-btn:disabled { opacity: .3; cursor: not-allowed; }
+
+        /* ── CLIENTE DETAIL DRAWER (hover row) ── */
+        .row-actions {
+            display: flex; gap: 6px; opacity: 0;
+            transition: opacity .15s;
+        }
+        .data-table tbody tr:hover .row-actions { opacity: 1; }
+        .row-action-btn {
+            font-size: 11px; padding: 3px 8px; border-radius: 5px;
+            background: var(--border); border: 1px solid var(--muted);
+            color: var(--sub); cursor: pointer; transition: all .15s;
+            font-family: 'DM Sans', sans-serif;
+        }
+        .row-action-btn:hover { color: var(--text); background: var(--muted); }
+    </style>
+</head>
+<body>
+
+<div class="shell">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+        <div class="logo">TEC<span>Bolivia</span></div>
+        <div class="topbar-badge">E-Commerce Support</div>
+        <div class="topbar-right">
+            <button class="btn" id="updateMetricsBtn">Actualizar métricas</button>
+            <a class="btn btn-primary"
+               href="https://docs.google.com/spreadsheets/d/1DIZOee7j_iBkf1LUQKieNf01lJ9lQD4QNYqfUmyobhE/edit?usp=sharing"
+               target="_blank">Ver Dashboard Google Sheet →</a>
+            <div class="avatar">AD</div>
+        </div>
+    </header>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="nav-section">General</div>
+        <a class="nav-item" href="index.html">
+            <span class="icon">◈</span> Resolver Tickets 
+        </a>
+        <a class="nav-item active" href="clientes.html">
+            <span class="icon">◎</span> Clientes Tickets Met.
+            <span class="nav-badge neutral" id="clienteCount">—</span>
+        </a>
+        <a class="nav-item disabled" href="#">
+            <span class="icon">◇</span> Conversaciones
+            <span class="nav-badge neutral">soon</span>
+        </a>
+        <div class="nav-section">Análisis</div>
+        <a class="nav-item" href="metricas_agentes.html">
+            <span class="icon">∷</span> Métricas Agentes
+        </a>
+        <a class="nav-item disabled" href="#">
+            <span class="icon">≋</span> Reportes
+            <span class="nav-badge neutral">soon</span>
+        </a>
+        <div class="nav-section">Sistema</div>
+        <a class="nav-item disabled" href="#">
+            <span class="icon">⚙</span> Configuración
+            <span class="nav-badge neutral">soon</span>
+        </a>
+        <div class="sidebar-bottom">
+            <div class="nav-item"><span class="icon">◉</span> Admin</div>
+        </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+
+        <nav class="breadcrumb">
+            <span class="bc-item bc-home" onclick="location.href='index.html'">Inicio</span>
+            <span class="bc-sep">›</span>
+            <span class="bc-item bc-active">Clientes Tickets Met.</span>
+        </nav>
+
+        <div class="page-header">
+            <div>
+                <div class="page-title">Detalle de Clientes y sus Tickets</div>
+                <div class="page-sub" id="lastUpdated">Cargando datos…</div>
+            </div>
+        </div>
+
+        <!-- STAT CARDS -->
+        <div class="stats-row">
+            <div class="stat-card blue fade-in">
+                <div class="stat-label">Total clientes</div>
+                <div class="stat-value" id="statTotal">—</div>
+                <div class="stat-delta">Registros únicos</div>
+            </div>
+            <div class="stat-card amber fade-in">
+                <div class="stat-label">VIP</div>
+                <div class="stat-value" id="statVip">—</div>
+                <div class="stat-delta">Clientes VIP</div>
+            </div>
+            <div class="stat-card green fade-in">
+                <div class="stat-label">Estándar</div>
+                <div class="stat-value" id="statEstandar">—</div>
+                <div class="stat-delta">Clientes estándar</div>
+            </div>
+            <div class="stat-card red fade-in">
+                <div class="stat-label">Tickets alta urgencia</div>
+                <div class="stat-value" id="statAlta">—</div>
+                <div class="stat-delta">Urgencia alta</div>
+            </div>
+            <div class="stat-card green fade-in">
+                <div class="stat-label">Sentim. positivo</div>
+                <div class="stat-value" id="statPos">—</div>
+                <div class="stat-delta">De todos los tickets</div>
+            </div>
+        </div>
+
+        <!-- CHARTS -->
+        <div class="charts-row">
+
+            <!-- Urgencia -->
+            <div class="chart-panel">
+                <div class="chart-title">Tickets por urgencia</div>
+                <div class="bar-list" id="chartUrgencia">
+                    <div class="bar-item">
+                        <div class="bar-item-label"><span>Alta</span><span id="bUrgAlta">—</span></div>
+                        <div class="bar-track"><div class="bar-fill" id="bfUrgAlta" style="width:0%;background:var(--red)"></div></div>
+                    </div>
+                    <div class="bar-item">
+                        <div class="bar-item-label"><span>Media</span><span id="bUrgMedia">—</span></div>
+                        <div class="bar-track"><div class="bar-fill" id="bfUrgMedia" style="width:0%;background:var(--amber)"></div></div>
+                    </div>
+                    <div class="bar-item">
+                        <div class="bar-item-label"><span>Baja</span><span id="bUrgBaja">—</span></div>
+                        <div class="bar-track"><div class="bar-fill" id="bfUrgBaja" style="width:0%;background:var(--green)"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Estado -->
+            <div class="chart-panel">
+                <div class="chart-title">Tickets por estado</div>
+                <div class="donut-mini-wrap">
+                    <svg class="donut-mini" viewBox="0 0 36 36">
+                        <circle cx="18" cy="18" r="14" fill="none" stroke="#252528" stroke-width="5"/>
+                        <circle id="arcEsc" cx="18" cy="18" r="14" fill="none"
+                            stroke="#e05252" stroke-width="5"
+                            stroke-dasharray="0 88" stroke-linecap="round"
+                            transform="rotate(-90 18 18)"/>
+                        <circle id="arcAb" cx="18" cy="18" r="14" fill="none"
+                            stroke="#d4914a" stroke-width="5"
+                            stroke-dasharray="0 88" stroke-linecap="round"
+                            transform="rotate(-90 18 18)"/>
+                        <circle id="arcCer" cx="18" cy="18" r="14" fill="none"
+                            stroke="#4aad7a" stroke-width="5"
+                            stroke-dasharray="0 88" stroke-linecap="round"
+                            transform="rotate(-90 18 18)"/>
+                    </svg>
+                    <div class="donut-mini-legend">
+                        <div class="dml-row">
+                            <span class="dml-label"><span class="dml-dot" style="background:var(--red)"></span>Escalado</span>
+                            <span class="dml-val" id="dEsc">—</span>
+                        </div>
+                        <div class="dml-row">
+                            <span class="dml-label"><span class="dml-dot" style="background:var(--amber)"></span>Abierto</span>
+                            <span class="dml-val" id="dAb">—</span>
+                        </div>
+                        <div class="dml-row">
+                            <span class="dml-label"><span class="dml-dot" style="background:var(--green)"></span>Cerrado</span>
+                            <span class="dml-val" id="dCer">—</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sentimiento -->
+            <div class="chart-panel">
+                <div class="chart-title">Sentimiento de clientes</div>
+                <div class="bar-list">
+                    <div class="bar-item">
+                        <div class="bar-item-label"><span>😊 Positivo</span><span id="bSentPos">—</span></div>
+                        <div class="bar-track"><div class="bar-fill" id="bfSentPos" style="width:0%;background:var(--green)"></div></div>
+                    </div>
+                    <div class="bar-item">
+                        <div class="bar-item-label"><span>😐 Neutro</span><span id="bSentNeu">—</span></div>
+                        <div class="bar-track"><div class="bar-fill" id="bfSentNeu" style="width:0%;background:var(--blue)"></div></div>
+                    </div>
+                    <div class="bar-item">
+                        <div class="bar-item-label"><span>😞 Negativo</span><span id="bSentNeg">—</span></div>
+                        <div class="bar-track"><div class="bar-fill" id="bfSentNeg" style="width:0%;background:var(--red)"></div></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- TABLA PRINCIPAL -->
+        <div class="full-panel">
+            <div class="table-toolbar">
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="searchInput" placeholder="Buscar por nombre, ticket, correo…" oninput="applyFilters()">
+                </div>
+                <select class="filter-select" id="filterUrgencia" onchange="applyFilters()">
+                    <option value="">Urgencia: Todas</option>
+                    <option value="alta">Alta</option>
+                    <option value="media">Media</option>
+                    <option value="baja">Baja</option>
+                </select>
+                <select class="filter-select" id="filterEstado" onchange="applyFilters()">
+                    <option value="">Estado: Todos</option>
+                    <option value="ESCALADO">Escalado</option>
+                    <option value="ABIERTO">Abierto</option>
+                    <option value="CERRADO">Cerrado</option>
+                </select>
+                <select class="filter-select" id="filterTipo" onchange="applyFilters()">
+                    <option value="">Tipo: Todos</option>
+                    <option value="VIP">VIP</option>
+                    <option value="Estandar">Estándar</option>
+                </select>
+                <select class="filter-select" id="filterSentimiento" onchange="applyFilters()">
+                    <option value="">Sentimiento: Todos</option>
+                    <option value="positivo">😊 Positivo</option>
+                    <option value="neutro">😐 Neutro</option>
+                    <option value="negativo">😞 Negativo</option>
+                </select>
+                <div class="toolbar-right">
+                    <span class="rec-count" id="recCount">— registros</span>
+                    <button class="btn" onclick="exportCSV()">⬇ CSV</button>
+                    <button class="panel-action" onclick="loadData()">Actualizar ↻</button>
+                </div>
+            </div>
+
+            <div style="overflow-x:auto;">
+                <table class="data-table" id="dataTable">
+                    <thead>
+                        <tr>
+                            <th onclick="sortBy('ticket_id')">Ticket-ID <span class="sort-arrow" id="s_ticket_id"></span></th>
+                            <th onclick="sortBy('nombre')">Nombre <span class="sort-arrow" id="s_nombre"></span></th>
+                            <th onclick="sortBy('ci')">CI <span class="sort-arrow" id="s_ci"></span></th>
+                            <th onclick="sortBy('correo')">Correo <span class="sort-arrow" id="s_correo"></span></th>
+                            <th>Mensaje</th>
+                            <th onclick="sortBy('urgencia')">Urgencia <span class="sort-arrow" id="s_urgencia"></span></th>
+                            <th onclick="sortBy('sentimiento')">Sentim. <span class="sort-arrow" id="s_sentimiento"></span></th>
+                            <th onclick="sortBy('estado')">Estado <span class="sort-arrow" id="s_estado"></span></th>
+                            <th onclick="sortBy('tipo_cliente')">Tipo <span class="sort-arrow" id="s_tipo_cliente"></span></th>
+                            <th onclick="sortBy('fecha_creacion')">Fecha creación <span class="sort-arrow" id="s_fecha_creacion"></span></th>
+                            <th onclick="sortBy('fecha_cierre')">Fecha cierre <span class="sort-arrow" id="s_fecha_cierre"></span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr><td colspan="11">
+                            <div class="table-empty">
+                                <div class="table-empty-icon">⏳</div>
+                                Cargando datos…
+                            </div>
+                        </td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="table-pagination">
+                <span id="pagInfo">— de — registros</span>
+                <div class="pag-btns" id="pagBtns"></div>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script>
+const METRICS_WEBHOOK_APP  = "https://training.intersim.cloud/webhook/metricas_app";
+const METRICS_WEBHOOK_SHEETS = "https://training.intersim.cloud/webhook/metricas_sheets";
+const HEADERS = { "Content-Type": "application/json", "x-api-key": "15252363avf$X" };
+const SENTIMENTS = { positivo: "😊", neutro: "😐", negativo: "😞" };
+
+let allData    = [];
+let filtered   = [];
+let sortKey    = "fecha_creacion";
+let sortDir    = -1; // -1 = desc
+let currentPage = 1;
+const perPage   = 15;
+
+// ── LOAD ──
+async function loadData() {
+    document.getElementById("lastUpdated").textContent = "Cargando…";
+
+    try {
+        const res = await fetch(METRICS_WEBHOOK_APP, {
+            method: "POST",
+            headers: HEADERS,
+            body: JSON.stringify({ PETICION: "OBTENER METRICAS APP" })
+        });
+
+        const raw = await res.json();
+        const items = Array.isArray(raw) ? raw : [raw];
+
+        // ── EXTRAER SOLO LOS TICKETS (robusto) ──
+        let tickets = [];
+
+        // caso 1: estructura directa { tickets: [...] }
+        const direct = items.find(item => item.tickets);
+        if (direct) {
+            tickets = direct.tickets;
+        }
+
+        // caso 2: estructura n8n { json: { tickets: [...] } }
+        const nested = items.find(item => item.json?.tickets);
+        if (!tickets.length && nested) {
+            tickets = nested.json.tickets;
+        }
+
+        // asignar
+        allData = tickets;
+
+        // ── LOGS (debug) ──
+        console.log("Total items recibidos:", items.length);
+        console.log("Total tickets extraídos:", allData.length);
+        console.log("Ejemplo ticket:", allData[0]);
+
+        // ── UI ──
+        document.getElementById("lastUpdated").textContent =
+            "Actualizado: " + new Date().toLocaleTimeString("es-BO");
+
+        updateStats();
+        updateCharts();
+        applyFilters();
+
+    } catch (e) {
+        console.error(e);
+
+        document.getElementById("lastUpdated").textContent = "Error al cargar datos";
+
+        document.getElementById("tableBody").innerHTML = `
+            <tr>
+                <td colspan="11">
+                    <div class="table-empty">
+                        <div class="table-empty-icon">⚠️</div>
+                        Error cargando datos
+                    </div>
+                </td>
+            </tr>
+        `;
+    }
+}
+
+// ── STATS ──
+function updateStats() {
+    const total  = allData.length;
+    const vip    = allData.filter(r => (r.tipo_cliente||"").toLowerCase() === "vip").length;
+    const est    = allData.filter(r => (r.tipo_cliente||"").toLowerCase() !== "vip").length;
+    const alta   = allData.filter(r => (r.urgencia||"").toLowerCase() === "alta").length;
+    const pos    = allData.filter(r => (r.sentimiento||"").toLowerCase() === "positivo").length;
+
+    document.getElementById("statTotal").textContent   = total;
+    document.getElementById("statVip").textContent     = vip;
+    document.getElementById("statEstandar").textContent= est;
+    document.getElementById("statAlta").textContent    = alta;
+    document.getElementById("statPos").textContent     = pos;
+    document.getElementById("clienteCount").textContent= total;
+}
+
+// ── CHARTS ──
+function updateCharts() {
+    const total = allData.length || 1;
+
+    const alta  = allData.filter(r => (r.urgencia||"").toLowerCase() === "alta").length;
+    const media = allData.filter(r => (r.urgencia||"").toLowerCase() === "media").length;
+    const baja  = allData.filter(r => (r.urgencia||"").toLowerCase() === "baja").length;
+    document.getElementById("bUrgAlta").textContent  = alta;
+    document.getElementById("bUrgMedia").textContent = media;
+    document.getElementById("bUrgBaja").textContent  = baja;
+    document.getElementById("bfUrgAlta").style.width  = (alta/total*100).toFixed(1)+"%";
+    document.getElementById("bfUrgMedia").style.width = (media/total*100).toFixed(1)+"%";
+    document.getElementById("bfUrgBaja").style.width  = (baja/total*100).toFixed(1)+"%";
+
+    const esc = allData.filter(r => (r.estado||"").toUpperCase() === "ESCALADO").length;
+    const ab  = allData.filter(r => (r.estado||"").toUpperCase() === "ABIERTO").length;
+    const cer = allData.filter(r => (r.estado||"").toUpperCase() === "CERRADO").length;
+    document.getElementById("dEsc").textContent = esc;
+    document.getElementById("dAb").textContent  = ab;
+    document.getElementById("dCer").textContent = cer;
+    const circ = 2 * Math.PI * 14;
+    const gap  = 1;
+    const pEsc = (esc/total)*circ;
+    const pAb  = (ab/total)*circ;
+    const pCer = (cer/total)*circ;
+    document.getElementById("arcEsc").setAttribute("stroke-dasharray", `${Math.max(0,pEsc-gap)} ${circ}`);
+    document.getElementById("arcAb").setAttribute("stroke-dasharray",  `${Math.max(0,pAb-gap)} ${circ}`);
+    document.getElementById("arcAb").setAttribute("stroke-dashoffset",  -pEsc);
+    document.getElementById("arcCer").setAttribute("stroke-dasharray", `${Math.max(0,pCer-gap)} ${circ}`);
+    document.getElementById("arcCer").setAttribute("stroke-dashoffset", -(pEsc+pAb));
+
+    const sPos = allData.filter(r => (r.sentimiento||"").toLowerCase() === "positivo").length;
+    const sNeu = allData.filter(r => (r.sentimiento||"").toLowerCase() === "neutro").length;
+    const sNeg = allData.filter(r => (r.sentimiento||"").toLowerCase() === "negativo").length;
+    document.getElementById("bSentPos").textContent = sPos;
+    document.getElementById("bSentNeu").textContent = sNeu;
+    document.getElementById("bSentNeg").textContent = sNeg;
+    document.getElementById("bfSentPos").style.width = (sPos/total*100).toFixed(1)+"%";
+    document.getElementById("bfSentNeu").style.width = (sNeu/total*100).toFixed(1)+"%";
+    document.getElementById("bfSentNeg").style.width = (sNeg/total*100).toFixed(1)+"%";
+}
+
+// ── FILTERS ──
+function applyFilters() {
+    const q    = document.getElementById("searchInput").value.toLowerCase();
+    const urg  = document.getElementById("filterUrgencia").value.toLowerCase();
+    const est  = document.getElementById("filterEstado").value.toUpperCase();
+    const tipo = document.getElementById("filterTipo").value.toLowerCase();
+    const sent = document.getElementById("filterSentimiento").value.toLowerCase();
+
+    filtered = allData.filter(r => {
+        const matchQ = !q ||
+            (r.ticket_id||"").toLowerCase().includes(q) ||
+            (r.nombre||"").toLowerCase().includes(q) ||
+            (r.correo||"").toLowerCase().includes(q) ||
+            (r.cliente_id||"").toLowerCase().includes(q) ||
+            (r.mensaje||"").toLowerCase().includes(q);
+        const matchU = !urg  || (r.urgencia||"").toLowerCase() === urg;
+        const matchE = !est  || (r.estado||"").toUpperCase() === est;
+        const matchT = !tipo || (r.tipo_cliente||"").toLowerCase() === tipo;
+        const matchS = !sent || (r.sentimiento||"").toLowerCase() === sent;
+        return matchQ && matchU && matchE && matchT && matchS;
+    });
+
+    doSort();
+    currentPage = 1;
+    renderTable();
+}
+
+// ── SORT ──
+function sortBy(key) {
+    if (sortKey === key) sortDir *= -1;
+    else { sortKey = key; sortDir = 1; }
+    document.querySelectorAll(".sort-arrow").forEach(el => el.textContent = "");
+    const el = document.getElementById("s_"+key);
+    if (el) el.textContent = sortDir === 1 ? " ↑" : " ↓";
+    doSort();
+    renderTable();
+}
+
+function doSort() {
+    filtered.sort((a, b) => {
+        const av = (a[sortKey]||"").toString().toLowerCase();
+        const bv = (b[sortKey]||"").toString().toLowerCase();
+        return av < bv ? -sortDir : av > bv ? sortDir : 0;
+    });
+}
+
+// ── RENDER ──
+function shortDate(d) {
+    if (!d) return "—";
+    try {
+        return new Date(d).toLocaleString("es-BO", {
+            timeZone: "America/La_Paz",
+            day: "2-digit", month: "short",
+            year: "2-digit", hour: "2-digit", minute: "2-digit"
+        });
+    } catch { return d; }
+}
+
+function renderTable() {
+    const start = (currentPage - 1) * perPage;
+    const page  = filtered.slice(start, start + perPage);
+
+    document.getElementById("recCount").textContent = `${filtered.length} registros`;
+    document.getElementById("pagInfo").textContent  =
+        `${start+1}–${Math.min(start+perPage, filtered.length)} de ${filtered.length}`;
+
+    if (page.length === 0) {
+        document.getElementById("tableBody").innerHTML = `
+            <tr><td colspan="11"><div class="table-empty">
+                <div class="table-empty-icon">🔍</div>Sin resultados para los filtros aplicados
+            </div></td></tr>`;
+        renderPagination();
+        return;
+    }
+
+    document.getElementById("tableBody").innerHTML = page.map(r => {
+        const urgCls = (r.urgencia||"").toLowerCase();
+        const tipoCls = (r.tipo_cliente||"").toLowerCase() === "vip" ? "vip" : "estandar";
+        const tipoLabel = tipoCls === "vip" ? "VIP" : "Estándar";
+        return `<tr>
+            <td class="td-ticket">${r.ticket_id||"—"}</td>
+            <td class="td-nombre">${r.nombre||"—"}</td>
+            <td class="td-ci">${r.ci||"—"}</td>
+            <td class="td-correo">${r.correo||"—"}</td>
+            <td class="td-msg" title="${(r.mensaje||"").replace(/"/g,'&quot;')}">${r.mensaje||"—"}</td>
+            <td><span class="urg-badge ${urgCls}">${r.urgencia||"—"}</span></td>
+            <td class="sent-emoji" style="text-align:center">${SENTIMENTS[r.sentimiento]||"—"}</td>
+            <td><span class="badge ${(r.estado||"").toLowerCase()}">${r.estado||"—"}</span></td>
+            <td><span class="tipo-badge ${tipoCls}">${tipoLabel}</span></td>
+            <td class="td-fecha">${shortDate(r.fecha_creacion)}</td>
+            <td class="td-fecha">${shortDate(r.fecha_cierre)}</td>
+        </tr>`;
+    }).join("");
+
+    renderPagination();
+}
+
+function renderPagination() {
+    const total = Math.ceil(filtered.length / perPage);
+    const el = document.getElementById("pagBtns");
+    if (total <= 1) { el.innerHTML = ""; return; }
+    let html = `<button class="pag-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?"disabled":""}>‹</button>`;
+    for (let i = 1; i <= total; i++) {
+        html += `<button class="pag-btn ${i===currentPage?"active":""}" onclick="goPage(${i})">${i}</button>`;
+    }
+    html += `<button class="pag-btn" onclick="goPage(${currentPage+1})" ${currentPage===total?"disabled":""}>›</button>`;
+    el.innerHTML = html;
+}
+
+function goPage(p) {
+    const total = Math.ceil(filtered.length / perPage);
+    if (p < 1 || p > total) return;
+    currentPage = p;
+    renderTable();
+}
+
+// ── EXPORT CSV ──
+function exportCSV() {
+    const headers = ["ticket_id","nombre","ci","correo","mensaje","urgencia","sentimiento","estado","tipo_cliente","fecha_creacion","fecha_cierre"];
+    const rows = [headers.join(",")];
+    filtered.forEach(r => {
+        rows.push(headers.map(h => `"${(r[h]||"").toString().replace(/"/g,'""')}"`).join(","));
+    });
+    const blob = new Blob([rows.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "clientes_tecbolivia.csv";
+    a.click();
+}
+
+// ── UPDATE METRICS ──
+document.getElementById("updateMetricsBtn").addEventListener("click", async () => {
+    const btn = document.getElementById("updateMetricsBtn");
+    btn.textContent = "Actualizando…"; btn.disabled = true;
+    try {
+        await Promise.all([
+            fetch(METRICS_WEBHOOK_SHEETS, { method:"POST", headers:HEADERS, body:JSON.stringify({}) }),
+            fetch("https://training.intersim.cloud/webhook/metricas_app", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "x-api-key": "15252363avf$X" },
+                    body: JSON.stringify({ PETICION: "OBTENER METRICAS APP" })
+                }).then(r => r.json()).then(data => console.log(JSON.stringify(data, null, 2)))
+        ]);
+        btn.textContent = "✓ Actualizado";
+        setTimeout(() => { btn.textContent = "Actualizar métricas"; btn.disabled = false; }, 2000);
+        loadData();
+    } catch(e) {
+        btn.textContent = "Error — reintentar"; btn.disabled = false;
+    }
+});
+
+// ── INIT ──
+loadData();
+</script>
+</body>
+</html>

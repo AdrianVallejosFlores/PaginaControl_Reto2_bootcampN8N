@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Métricas Agentes — TecBolivia</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .agents-row-header,
+        .agents-row {
+            display: grid;
+            grid-template-columns: 200px 80px 80px 80px 70px 1fr;
+            align-items: center;
+            gap: 12px;
+            padding: 11px 20px;
+            font-size: 13px;
+            border-bottom: 1px solid var(--border);
+        }
+        .agents-row-header {
+            font-size: 11px; font-weight: 600; letter-spacing: 0.5px;
+            text-transform: uppercase; color: var(--muted); padding: 10px 20px 8px;
+        }
+        .agents-row { transition: background .15s; }
+        .agents-row:last-child { border-bottom: none; }
+        .agents-row:hover { background: rgba(255,255,255,.03); }
+
+        .eff-bar-wrap { display: flex; align-items: center; gap: 8px; }
+        .eff-bar { flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+        .eff-fill { height: 100%; border-radius: 2px; transition: width .6s ease; }
+        .eff-val { font-size: 12px; font-weight: 600; color: var(--text); min-width: 34px; text-align: right; }
+
+        .inter-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .inter-table th {
+            font-size: 10.5px; font-weight: 600; letter-spacing: 0.5px;
+            text-transform: uppercase; color: var(--muted);
+            padding: 8px 14px; text-align: left; border-bottom: 1px solid var(--border);
+            position: sticky; top: 0; background: var(--surface);
+        }
+        .inter-table td { padding: 9px 14px; color: var(--sub); border-bottom: 1px solid var(--border); vertical-align: middle; }
+        .inter-table tr:last-child td { border-bottom: none; }
+        .inter-table tr:hover td { background: rgba(255,255,255,.02); }
+        .inter-table td.mono { font-family: 'Syne', sans-serif; font-size: 11px; color: var(--text); font-weight: 700; }
+
+        .estado-exito { color: var(--green); font-weight: 600; font-size: 11px; }
+        .estado-error { color: var(--red);   font-weight: 600; font-size: 11px; }
+
+        .costo-alto { color: var(--red);   background: rgba(224,82,82,.12);  padding: 2px 7px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+        .costo-medio{ color: var(--amber); background: rgba(212,145,74,.12); padding: 2px 7px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+        .costo-bajo { color: var(--green); background: rgba(74,173,122,.12); padding: 2px 7px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+        .costo-sin  { color: var(--muted); background: var(--border);        padding: 2px 7px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+
+        .agente-pill { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 500; white-space: nowrap; }
+        .pill-supervisor   { background: rgba(90,158,212,.14); color: var(--blue); }
+        .pill-clasificador { background: rgba(212,145,74,.14);  color: var(--amber); }
+        .pill-gestion      { background: rgba(74,173,122,.14);  color: var(--green); }
+        .pill-rag          { background: rgba(224,82,82,.14);   color: var(--red); }
+        .pill-resumidor    { background: rgba(122,122,130,.14); color: var(--sub); }
+        .pill-default      { background: var(--border);         color: var(--sub); }
+
+        .days-bar-list { padding: 14px 20px; display: flex; flex-direction: column; gap: 10px; }
+        .day-row { display: flex; align-items: center; gap: 10px; font-size: 12px; }
+        .day-label { color: var(--sub); width: 88px; flex-shrink: 0; }
+        .day-bar-wrap { flex: 1; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+        .day-bar-fill { height: 100%; background: var(--blue); border-radius: 3px; transition: width .5s ease; }
+        .day-count { color: var(--text); font-weight: 600; min-width: 20px; text-align: right; }
+
+        .mini-stat { display: flex; flex-direction: column; gap: 2px; padding: 12px 20px; border-bottom: 1px solid var(--border); }
+        .mini-stat:last-child { border-bottom: none; }
+        .mini-stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+        .mini-stat-val   { font-size: 20px; font-weight: 800; font-family: 'Syne', sans-serif; color: var(--text); }
+        .mini-stat-sub   { font-size: 11px; color: var(--sub); }
+
+        .top-agent-card { padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; }
+        .top-agent-name { font-family: 'Syne', sans-serif; font-size: 19px; font-weight: 800; color: var(--text); letter-spacing: -0.5px; }
+        .top-agent-meta { font-size: 12px; color: var(--sub); line-height: 1.6; }
+        .top-agent-stat { display: flex; gap: 20px; }
+        .top-agent-stat-item { display: flex; flex-direction: column; gap: 2px; }
+        .top-agent-stat-num  { font-size: 24px; font-weight: 800; font-family: 'Syne', sans-serif; }
+        .top-agent-stat-lbl  { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+
+        .table-scroll { overflow-x: auto; max-height: 380px; overflow-y: auto; }
+        .table-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
+        .table-scroll::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 4px; }
+
+        .content-grid-full { margin-top: 16px; }
+
+        .error-state { padding: 32px 20px; text-align: center; color: var(--muted); font-size: 13px; }
+
+        /* ── MODELOS ── */
+        .modelo-row { display: flex; align-items: center; gap: 12px; font-size: 12px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+        .modelo-row:last-child { border-bottom: none; }
+        .modelo-name { color: var(--text); font-weight: 500; width: 260px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .modelo-bar-wrap { flex: 1; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+        .modelo-bar-fill { height: 100%; background: var(--blue); border-radius: 3px; transition: width .5s ease; }
+        .modelo-count { color: var(--text); font-weight: 700; font-family: 'Syne', sans-serif; min-width: 28px; text-align: right; }
+        .modelo-pct { color: var(--muted); font-size: 11px; min-width: 38px; text-align: right; }
+        .modelo-sin { color: var(--muted); font-style: italic; }
+    </style>
+</head>
+<body>
+
+<div class="shell">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+        <div class="logo">TEC<span>Bolivia</span></div>
+        <div class="topbar-badge">E-Commerce Support</div>
+        <div class="topbar-right">
+            <button class="btn" id="refreshAgentsBtn" onclick="loadData()">Actualizar métricas</button>
+            <a class="btn btn-primary"
+               href="https://docs.google.com/spreadsheets/d/1DIZOee7j_iBkf1LUQKieNf01lJ9lQD4QNYqfUmyobhE/edit?usp=sharing"
+               target="_blank">Ver Dashboard Google Sheet →</a>
+            <div class="avatar">AD</div>
+        </div>
+    </header>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="nav-section">General</div>
+        <a class="nav-item" href="index.html">
+            <span class="icon">◈</span> Resolver Tickets
+            <span class="nav-badge" id="openCount">—</span>
+        </a>
+        <a class="nav-item" href="clientes.html">
+            <span class="icon">◎</span> Clientes Tickets Met.
+        </a>
+        <a class="nav-item disabled" href="#">
+            <span class="icon">◇</span> Conversaciones
+            <span class="nav-badge neutral">soon</span>
+        </a>
+        <div class="nav-section">Análisis</div>
+        <a class="nav-item active" href="metricas_agentes.html">
+            <span class="icon">∷</span> Métricas Agentes
+        </a>
+        <a class="nav-item disabled" href="#">
+            <span class="icon">≋</span> Reportes
+            <span class="nav-badge neutral">soon</span>
+        </a>
+        <div class="nav-section">Sistema</div>
+        <a class="nav-item disabled" href="#">
+            <span class="icon">⚙</span> Configuración
+            <span class="nav-badge neutral">soon</span>
+        </a>
+        <div class="sidebar-bottom">
+            <div class="nav-item"><span class="icon">◉</span> Admin</div>
+        </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+
+        <nav class="breadcrumb">
+            <span class="bc-item bc-home" onclick="location.href='index.html'">Inicio</span>
+            <span class="bc-sep">›</span>
+            <span class="bc-item bc-active">Métricas Agentes</span>
+        </nav>
+
+        <div class="page-header">
+            <div>
+                <div class="page-title">Métricas del Sistema Multi-Agente</div>
+                <div class="page-sub" id="lastUpdated">Cargando datos…</div>
+            </div>
+        </div>
+
+        <!-- FILA 1 STATS -->
+        <div class="stats-row">
+            <div class="stat-card blue fade-in">
+                <div class="stat-label">Total Interacciones</div>
+                <div class="stat-value" id="statTotal">—</div>
+                <div class="stat-delta">Registradas en el sistema</div>
+            </div>
+            <div class="stat-card green fade-in">
+                <div class="stat-label">Exitosas</div>
+                <div class="stat-value" id="statExito">—</div>
+                <div class="stat-delta">Estado EXITO</div>
+            </div>
+            <div class="stat-card red fade-in">
+                <div class="stat-label">Con Error</div>
+                <div class="stat-value" id="statError">—</div>
+                <div class="stat-delta">Estado ERROR</div>
+            </div>
+            <div class="stat-card amber fade-in">
+                <div class="stat-label">Tiempo Prom.</div>
+                <div class="stat-value" id="statTiempo">—</div>
+                <div class="stat-delta">Respuesta promedio</div>
+            </div>
+        </div>
+
+        <!-- FILA 2 STATS -->
+        <div class="stats-row">
+            <div class="stat-card green fade-in">
+                <div class="stat-label">Costo Total Est.</div>
+                <div class="stat-value" id="statCostoTotal" style="font-size:24px">—</div>
+                <div class="stat-delta">Estimado acumulado</div>
+            </div>
+            <div class="stat-card blue fade-in">
+                <div class="stat-label">Costo Prom/Inter.</div>
+                <div class="stat-value" id="statCostoProm" style="font-size:24px">—</div>
+                <div class="stat-delta">Por interacción</div>
+            </div>
+            <div class="stat-card amber fade-in">
+                <div class="stat-label">Tokens Entrada</div>
+                <div class="stat-value" id="statTokensIn" style="font-size:24px">—</div>
+                <div class="stat-delta">Total acumulado</div>
+            </div>
+            <div class="stat-card amber fade-in">
+                <div class="stat-label">Tokens Salida</div>
+                <div class="stat-value" id="statTokensOut" style="font-size:24px">—</div>
+                <div class="stat-delta">Total acumulado</div>
+            </div>
+        </div>
+
+        <!-- GRID PRINCIPAL -->
+        <div class="content-grid">
+
+            <!-- RANKING -->
+            <div class="panel">
+                <div class="panel-header">
+                    <div>
+                        <div class="panel-title">Ranking de agentes</div>
+                        <div class="panel-sub">Interacciones y eficiencia por agente</div>
+                    </div>
+                    <button class="panel-action" onclick="loadData()">Actualizar ↻</button>
+                </div>
+                <div class="agents-row-header">
+                    <span>Agente</span>
+                    <span>Interacc.</span>
+                    <span>Exitosas</span>
+                    <span>Errores</span>
+                    <span>% Total</span>
+                    <span>Eficiencia</span>
+                </div>
+                <div id="agentsTable">
+                    <div class="loading-row"><div class="skel" style="width:140px"></div><div class="skel" style="flex:1"></div><div class="skel" style="width:60px"></div></div>
+                    <div class="loading-row"><div class="skel" style="width:140px"></div><div class="skel" style="flex:1"></div><div class="skel" style="width:60px"></div></div>
+                    <div class="loading-row"><div class="skel" style="width:140px"></div><div class="skel" style="flex:1"></div><div class="skel" style="width:60px"></div></div>
+                </div>
+            </div>
+
+            <!-- LATERAL -->
+            <div class="side-panels">
+                <!-- Donut distribución -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title">Distribución por agente</div>
+                    </div>
+                    <div class="donut-wrap">
+                        <svg class="donut" viewBox="0 0 36 36">
+                            <circle cx="18" cy="18" r="14" fill="none" stroke="#252528" stroke-width="5"/>
+                            <circle id="arcSup"  cx="18" cy="18" r="14" fill="none" stroke="#5a9ed4" stroke-width="5" stroke-dasharray="0 88" transform="rotate(-90 18 18)"/>
+                            <circle id="arcClas" cx="18" cy="18" r="14" fill="none" stroke="#d4914a" stroke-width="5" stroke-dasharray="0 88" transform="rotate(-90 18 18)"/>
+                            <circle id="arcGes"  cx="18" cy="18" r="14" fill="none" stroke="#4aad7a" stroke-width="5" stroke-dasharray="0 88" transform="rotate(-90 18 18)"/>
+                            <circle id="arcRag"  cx="18" cy="18" r="14" fill="none" stroke="#e05252" stroke-width="5" stroke-dasharray="0 88" transform="rotate(-90 18 18)"/>
+                            <circle id="arcOther"cx="18" cy="18" r="14" fill="none" stroke="#3a3a3e" stroke-width="5" stroke-dasharray="0 88" transform="rotate(-90 18 18)"/>
+                        </svg>
+                        <div class="donut-legend" id="donutLegend"></div>
+                    </div>
+                </div>
+
+                <!-- Clasificación costo -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title">Clasificación de costo</div>
+                    </div>
+                    <div id="costoPanel">
+                        <div class="mini-stat"><div class="mini-stat-label">Cargando…</div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ACTIVIDAD 7 DÍAS + TOP AGENTE -->
+        <div class="content-grid content-grid-full">
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">Actividad — últimos 7 días</div>
+                </div>
+                <div class="days-bar-list" id="daysPanel">
+                    <div class="loading-row"><div class="skel" style="flex:1"></div></div>
+                </div>
+            </div>
+            <div class="side-panels">
+                <div class="panel">
+                    <div class="panel-header"><div class="panel-title">Top agente</div></div>
+                    <div class="top-agent-card" id="topAgentPanel">
+                        <div class="feed-time">Cargando…</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODELOS IA UTILIZADOS (full width) -->
+        <div class="panel content-grid-full" style="margin-top:16px">
+            <div class="panel-header">
+                <div>
+                    <div class="panel-title">Modelos IA utilizados</div>
+                    <div class="panel-sub">Ranking de modelos por cantidad de interacciones</div>
+                </div>
+            </div>
+            <div id="modelosPanel" style="padding:6px 20px 14px">
+                <div class="loading-row"><div class="skel" style="flex:1"></div></div>
+            </div>
+
+            <div style="padding: 10px 20px 0">
+                <canvas id="modelosChart" height="120"></canvas>
+            </div>
+
+            <div id="modelosPanel" style="padding:6px 20px 14px">
+                <div class="loading-row"><div class="skel" style="flex:1"></div></div>
+            </div>
+        </div>
+
+        <!-- TOP INTERACCIONES POR COSTO (full width) -->
+        <div class="panel content-grid-full" style="margin-top:16px">
+            <div class="panel-header">
+                <div>
+                    <div class="panel-title">Top interacciones por costo</div>
+                    <div class="panel-sub">Las 20 más costosas del sistema</div>
+                </div>
+            </div>
+            <div class="table-scroll">
+                <table class="inter-table">
+                    <thead>
+                        <tr>
+                            <th>ID Ejec.</th>
+                            <th>Agente</th>
+                            <th>Modelo</th>
+                            <th>Tokens Ent.</th>
+                            <th>Tokens Sal.</th>
+                            <th>Costo</th>
+                            <th>Clasificación</th>
+                            <th>Tiempo</th>
+                            <th>Estado</th>
+                            <th>Fecha</th>
+                        </tr>
+                    </thead>
+                    <tbody id="interBody">
+                        <tr><td colspan="10" style="text-align:center;padding:24px;color:var(--muted)">Cargando…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script>
+const WEBHOOK = "https://training.intersim.cloud/webhook/metricas_app";
+const HEADERS = { "Content-Type": "application/json", "x-api-key": "15252363avf$X" };
+
+const AGENTE_META = {
+    "agente supervisor":    { color: "#5a9ed4", pillClass: "pill-supervisor",   arc: "arcSup"   },
+    "agente clasificador":  { color: "#d4914a", pillClass: "pill-clasificador", arc: "arcClas"  },
+    "agente de gestión de clientes y reclamos": { color: "#4aad7a", pillClass: "pill-gestion", arc: "arcGes" },
+    "agente rag":           { color: "#e05252", pillClass: "pill-rag",          arc: "arcRag"   },
+    "agente resumidor":     { color: "#7a7a82", pillClass: "pill-resumidor",    arc: "arcOther" },
+};
+
+function getMeta(nombre) {
+    return AGENTE_META[(nombre||"").toLowerCase()] || { color: "#3a3a3e", pillClass: "pill-default", arc: "arcOther" };
+}
+
+function parseTiempo(s) {
+    if (!s || s === "0s") return 0;
+    return parseFloat((s+"").replace("s","")) || 0;
+}
+
+function parseCosto(s) {
+    if (!s || s === "$0") return 0;
+    return parseFloat((s+"").replace("$","")) || 0;
+}
+
+function fmtFechaCorta(d) {
+    if (!d) return "—";
+    return new Date(d).toLocaleDateString("es-BO", {
+        timeZone: "America/La_Paz", day: "2-digit", month: "short"
+    });
+}
+
+// ── CARGA ──────────────────────────────────────────────────────────────────
+async function loadData() {
+    document.getElementById("lastUpdated").textContent = "Cargando…";
+
+    try {
+        const res = await fetch(WEBHOOK, {
+            method: "POST",
+            headers: HEADERS,
+            body: JSON.stringify({ PETICION: "OBTENER METRICAS APP" })
+        });
+
+        const raw = await res.json();
+        const items = Array.isArray(raw) ? raw : [raw];
+
+        let agentes = [];
+
+        const direct = items.find(item => item.agentes);
+        if (direct) {
+            agentes = direct.agentes;
+        }
+
+        const nested = items.find(item => item.json?.agentes);
+        if (!agentes.length && nested) {
+            agentes = nested.json.agentes;
+        }
+
+        if (agentes.length && agentes[0]?.json) {
+            agentes = agentes.map(a => a.json);
+        }
+
+        console.log("RAW:", raw);
+        console.log("Items:", items);
+        console.log("Total agentes extraídos:", agentes.length);
+        console.log("Ejemplo agente:", agentes[0]);
+
+        if (!agentes.length) {
+            throw new Error("No se encontraron agentes");
+        }
+
+        render(agentes);
+
+        document.getElementById("lastUpdated").textContent =
+            "Actualizado: " + new Date().toLocaleTimeString("es-BO");
+
+    } catch (e) {
+        console.error("ERROR:", e);
+
+        document.getElementById("lastUpdated").textContent = "Error al cargar datos";
+
+        document.getElementById("agentsTable").innerHTML = `
+            <div class="error-state">
+                ⚠️ Error cargando datos de agentes
+            </div>
+        `;
+    }
+}
+
+// ── RENDER PRINCIPAL ───────────────────────────────────────────────────────
+function render(data) {
+    document.getElementById("lastUpdated").textContent =
+        "Última actualización: " + new Date().toLocaleTimeString("es-BO") +
+        " · " + data.length + " registros";
+
+    const total    = data.length;
+    const exitosos = data.filter(r => r.estado_final === "EXITO").length;
+    const errores  = data.filter(r => r.estado_final === "ERROR").length;
+
+    const tiempos  = data.map(r => parseTiempo(r.tiempo_total_respuesta)).filter(t => t > 0);
+    const avgT     = tiempos.length ? (tiempos.reduce((a,b)=>a+b,0)/tiempos.length).toFixed(2) : "0";
+
+    const costoTotal = data.reduce((s,r) => s + parseCosto(r.costo_estimado), 0);
+    const tokensIn   = data.reduce((s,r) => s + (parseInt(r.total_tockens_entrada)||0), 0);
+    const tokensOut  = data.reduce((s,r) => s + (parseInt(r.total_tockens_salida)||0), 0);
+
+    document.getElementById("statTotal").textContent      = total;
+    document.getElementById("statExito").textContent      = exitosos;
+    document.getElementById("statError").textContent      = errores;
+    document.getElementById("statTiempo").textContent     = avgT + "s";
+    document.getElementById("statCostoTotal").textContent = "$" + costoTotal.toFixed(4);
+    document.getElementById("statCostoProm").textContent  = "$" + (total ? costoTotal/total : 0).toFixed(4);
+    document.getElementById("statTokensIn").textContent   = tokensIn.toLocaleString();
+    document.getElementById("statTokensOut").textContent  = tokensOut.toLocaleString();
+
+    renderRanking(data, total);
+    renderDonut(data, total);
+    renderCosto(data, total);
+    renderDays(data);
+    renderTopAgente(data);
+    renderModelos(data, total);
+    renderInterTable(data);
+}
+
+// ── RANKING ────────────────────────────────────────────────────────────────
+function renderRanking(data, total) {
+    const map = {};
+    data.forEach(r => {
+        const k = r.agente_utilizado || "Desconocido";
+        if (!map[k]) map[k] = { nombre: k, inter: 0, exito: 0, error: 0 };
+        map[k].inter++;
+        if (r.estado_final === "EXITO") map[k].exito++; else map[k].error++;
+    });
+
+    document.getElementById("agentsTable").innerHTML =
+        Object.values(map).sort((a,b) => b.inter-a.inter).map(a => {
+            const eff  = Math.round((a.exito/a.inter)*100);
+            const pct  = ((a.inter/total)*100).toFixed(1);
+            const meta = getMeta(a.nombre);
+            const col  = eff >= 80 ? "var(--green)" : eff >= 50 ? "var(--amber)" : "var(--red)";
+            return `
+            <div class="agents-row">
+                <span><span class="agente-pill ${meta.pillClass}">${a.nombre}</span></span>
+                <span style="font-weight:600;color:var(--text)">${a.inter}</span>
+                <span style="color:var(--green);font-weight:600">${a.exito}</span>
+                <span style="color:${a.error>0?'var(--red)':'var(--muted)'};font-weight:${a.error>0?600:400}">${a.error}</span>
+                <span style="color:var(--sub)">${pct}%</span>
+                <span class="eff-bar-wrap">
+                    <span class="eff-bar"><span class="eff-fill" style="width:${eff}%;background:${col}"></span></span>
+                    <span class="eff-val">${eff}%</span>
+                </span>
+            </div>`;
+        }).join("");
+}
+
+// ── DONUT ──────────────────────────────────────────────────────────────────
+function renderDonut(data, total) {
+    const map = {};
+    data.forEach(r => { const k = r.agente_utilizado||"Desconocido"; map[k]=(map[k]||0)+1; });
+
+    const circ = 2 * Math.PI * 14;
+    let offset = 0;
+
+    ["arcSup","arcClas","arcGes","arcRag","arcOther"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.setAttribute("stroke-dasharray",`0 ${circ.toFixed(2)}`);
+    });
+
+    let legendHTML = "";
+
+    Object.entries(map).sort((a,b)=>b[1]-a[1]).forEach(([nombre, count]) => {
+        const meta = getMeta(nombre);
+        const arc  = meta.arc ? document.getElementById(meta.arc) : null;
+        const pct  = (count/total)*circ;
+        const gap  = 0.8;
+
+        if (arc) {
+            arc.setAttribute("stroke-dasharray", `${Math.max(0,pct-gap).toFixed(2)} ${(circ-(pct-gap)).toFixed(2)}`);
+            arc.setAttribute("stroke-dashoffset", (-offset).toFixed(2));
+        }
+        offset += pct;
+
+        legendHTML += `
+        <div class="legend-row">
+            <span class="legend-label">
+                <span class="legend-dot" style="background:${meta.color}"></span>
+                <span style="font-size:11px">${nombre.replace(/agente /i,"")}</span>
+            </span>
+            <span class="legend-val">${count}</span>
+        </div>`;
+    });
+
+    document.getElementById("donutLegend").innerHTML = legendHTML;
+}
+
+// ── CLASIFICACIÓN COSTO ────────────────────────────────────────────────────
+function renderCosto(data, total) {
+    const clases = { "ALTO":0, "MEDIO":0, "BAJO":0, "Sin Calificacion":0 };
+    data.forEach(r => {
+        const c = r["costo_clasificación"] || r.costo_clasificacion || "Sin Calificacion";
+        const k = c.toUpperCase();
+        if (k === "ALTO") clases["ALTO"]++;
+        else if (k === "MEDIO") clases["MEDIO"]++;
+        else if (k === "BAJO") clases["BAJO"]++;
+        else clases["Sin Calificacion"]++;
+    });
+
+    const items = [
+        { label:"ALTO",            val:clases["ALTO"],             cls:"costo-alto" },
+        { label:"MEDIO",           val:clases["MEDIO"],            cls:"costo-medio" },
+        { label:"BAJO",            val:clases["BAJO"],             cls:"costo-bajo" },
+        { label:"Sin Calificación",val:clases["Sin Calificacion"], cls:"costo-sin" },
+    ];
+
+    document.getElementById("costoPanel").innerHTML = items.map(i => `
+        <div class="mini-stat">
+            <div class="mini-stat-label"><span class="${i.cls}">${i.label}</span></div>
+            <div class="mini-stat-val">${i.val}</div>
+            <div class="mini-stat-sub">${total ? ((i.val/total)*100).toFixed(1) : 0}% del total</div>
+        </div>`).join("");
+}
+
+// ── ACTIVIDAD 7 DÍAS ───────────────────────────────────────────────────────
+function renderDays(data) {
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        days.push({
+            date:  d.toISOString().slice(0,10),
+            label: d.toLocaleDateString("es-BO", { timeZone:"America/La_Paz", weekday:"short", day:"numeric", month:"short" }),
+            count: 0
+        });
+    }
+
+    data.forEach(r => {
+        if (!r.fecha_creacion) return;
+        const f = new Date(r.fecha_creacion).toISOString().slice(0,10);
+        const d = days.find(x => x.date === f);
+        if (d) d.count++;
+    });
+
+    const maxC = Math.max(...days.map(d=>d.count), 1);
+
+    document.getElementById("daysPanel").innerHTML = days.map(d => `
+        <div class="day-row">
+            <span class="day-label">${d.label}</span>
+            <span class="day-bar-wrap">
+                <span class="day-bar-fill" style="width:${((d.count/maxC)*100).toFixed(1)}%"></span>
+            </span>
+            <span class="day-count">${d.count}</span>
+        </div>`).join("");
+}
+
+// ── TOP AGENTE ─────────────────────────────────────────────────────────────
+function renderTopAgente(data) {
+    const map = {};
+    data.forEach(r => {
+        const k = r.agente_utilizado || "Desconocido";
+        if (!map[k]) map[k] = { nombre:k, inter:0, exito:0 };
+        map[k].inter++;
+        if (r.estado_final === "EXITO") map[k].exito++;
+    });
+
+    const top  = Object.values(map).sort((a,b) => b.exito-a.exito)[0];
+    if (!top) return;
+
+    const meta = getMeta(top.nombre);
+    const eff  = Math.round((top.exito/top.inter)*100);
+    const col  = eff>=80?"var(--green)":eff>=50?"var(--amber)":"var(--red)";
+
+    document.getElementById("topAgentPanel").innerHTML = `
+        <div class="top-agent-name">${top.nombre}</div>
+        <div class="top-agent-meta">Mayor cantidad de interacciones exitosas</div>
+        <div class="top-agent-stat">
+            <div class="top-agent-stat-item">
+                <span class="top-agent-stat-num" style="color:var(--blue)">${top.inter}</span>
+                <span class="top-agent-stat-lbl">Interacciones</span>
+            </div>
+            <div class="top-agent-stat-item">
+                <span class="top-agent-stat-num" style="color:var(--green)">${top.exito}</span>
+                <span class="top-agent-stat-lbl">Exitosas</span>
+            </div>
+            <div class="top-agent-stat-item">
+                <span class="top-agent-stat-num" style="color:${col}">${eff}%</span>
+                <span class="top-agent-stat-lbl">Eficiencia</span>
+            </div>
+        </div>
+        <div><span class="agente-pill ${meta.pillClass}">${top.nombre}</span></div>`;
+}
+
+// ── MODELOS IA ─────────────────────────────────────────────────────────────
+function renderModelos(data, total) {
+    const map = {};
+
+    data.forEach(r => {
+        const m = (r.modelo_utilizado || "Sin modelo").trim();
+        map[m] = (map[m] || 0) + 1;
+    });
+
+    const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]);
+    const maxC = sorted[0]?.[1] || 1;
+
+    const COLORS = ["#5a9ed4","#4aad7a","#d4914a","#e05252","#a370d4","#d45a8e","#7a7a82"];
+
+    // ── RENDER LISTA (TU UI ORIGINAL) ──
+    document.getElementById("modelosPanel").innerHTML = sorted.map(([nombre, count], i) => {
+        const esSin = nombre.toLowerCase().includes("sin");
+        const color = esSin ? "#3a3a3e" : COLORS[i % COLORS.length];
+
+        const pct = ((count / total) * 100).toFixed(1);
+        const barW = ((count / maxC) * 100).toFixed(1);
+
+        const rank = i + 1;
+        const isTop = i === 0;
+
+        return `
+        <div class="modelo-row" style="${isTop ? 'background:rgba(255,255,255,0.02);border-radius:6px;padding:10px 8px;' : ''}">
+            
+            <span style="width:22px;font-weight:700;color:${isTop ? 'var(--green)' : 'var(--muted)'}">
+                ${rank}
+            </span>
+
+            <span class="modelo-name ${esSin ? 'modelo-sin' : ''}" title="${nombre}">
+                ${nombre}
+            </span>
+
+            <span class="modelo-bar-wrap">
+                <span class="modelo-bar-fill"
+                      style="width:${barW}%;background:${color};
+                             ${isTop ? 'box-shadow:0 0 6px ' + color : ''}">
+                </span>
+            </span>
+
+            <span class="modelo-count">${count}</span>
+            <span class="modelo-pct">${pct}%</span>
+        </div>
+        `;
+    }).join("");
+
+    // ── GRÁFICO ──
+    const labels = sorted.map(([nombre]) => nombre);
+    const values = sorted.map(([_, count]) => count);
+
+    const ctx = document.getElementById("modelosChart").getContext("2d");
+
+    // destruir anterior (IMPORTANTE)
+    if (window.modelosChartInstance) {
+        window.modelosChartInstance.destroy();
+    }
+
+    window.modelosChartInstance = new Chart(ctx, {
+        type: "bar", // 👉 cambia a "pie" si quieres torta
+        data: {
+            labels: labels,
+            datasets: [{
+                data: values,
+                backgroundColor: COLORS,
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { precision: 0 }
+                }
+            }
+        }
+    });
+}
+
+// ── TABLA TOP INTERACCIONES ────────────────────────────────────────────────
+function renderInterTable(data) {
+    const sorted = [...data].sort((a,b) => parseCosto(b.costo_estimado)-parseCosto(a.costo_estimado));
+    const top20  = sorted.slice(0,20);
+
+    const costoClass = c => {
+        const s = (c||"").toUpperCase();
+        if (s==="ALTO")  return "costo-alto";
+        if (s==="MEDIO") return "costo-medio";
+        if (s==="BAJO")  return "costo-bajo";
+        return "costo-sin";
+    };
+
+    document.getElementById("interBody").innerHTML = top20.map(r => {
+        const meta = getMeta(r.agente_utilizado);
+        const clas = r["costo_clasificación"] || r.costo_clasificacion || "Sin Calificacion";
+        return `
+        <tr>
+            <td class="mono">${r.id_ejec_workflow||"—"}</td>
+            <td><span class="agente-pill ${meta.pillClass}">${r.agente_utilizado||"—"}</span></td>
+            <td style="color:var(--muted);font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.modelo_utilizado||"—"}</td>
+            <td>${(parseInt(r.total_tockens_entrada)||0).toLocaleString()}</td>
+            <td>${(parseInt(r.total_tockens_salida)||0).toLocaleString()}</td>
+            <td style="font-weight:600;color:var(--text)">${r.costo_estimado||"$0"}</td>
+            <td><span class="${costoClass(clas)}">${clas}</span></td>
+            <td style="white-space:nowrap">${r.tiempo_total_respuesta||"—"}</td>
+            <td class="${r.estado_final==="EXITO"?"estado-exito":"estado-error"}">${r.estado_final||"—"}</td>
+            <td style="white-space:nowrap;color:var(--muted)">${fmtFechaCorta(r.fecha_creacion)}</td>
+        </tr>`;
+    }).join("");
+}
+
+loadData();
+</script>
+
+</body>
+</html>

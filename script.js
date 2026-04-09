@@ -1,5 +1,7 @@
-const WEBHOOK_URL     = "https://training.intersim.cloud/webhook/gestionar_tickets";
-const METRICS_WEBHOOK = "https://training.intersim.cloud/webhook/metricasv2";
+const METRICS_WEBHOOK_APP     = "https://training.intersim.cloud/webhook/metricas_app";
+const METRICS_WEBHOOK_SHEETS = "https://training.intersim.cloud/webhook/metricas_sheets";
+
+
 const HEADERS = {
     "Content-Type": "application/json",
     "x-api-key": "15252363avf$X"
@@ -11,7 +13,7 @@ const SENTIMENTS = { positivo: "😊", neutro: "😐", negativo: "😞" };
 let ticketActivo = null;
 
 document.getElementById("refreshBtn")?.addEventListener("click", loadTickets);
-document.getElementById("updateMetricsBtn").addEventListener("click", updateMetrics);
+document.getElementById("updateMetricsBtn")?.addEventListener("click", updateMetrics);
 
 // 🔵 FORMATEAR FECHA
 function formatDate(d) {
@@ -53,7 +55,7 @@ async function loadTickets() {
         </div>`;
 
     try {
-        const res = await fetch(WEBHOOK_URL, {
+        const res = await fetch(METRICS_WEBHOOK_APP, {
             method: "POST",
             headers: HEADERS,
             body: JSON.stringify({ PETICION: "SOLICITAR TICKETS" })
@@ -287,7 +289,7 @@ async function resolverTicket() {
 
     try {
         // PASO 1 — Resolver ticket escalado
-        await fetch(WEBHOOK_URL, {
+        await fetch(METRICS_WEBHOOK_APP, {
             method: "POST",
             headers: HEADERS,
             body: JSON.stringify({
@@ -298,7 +300,7 @@ async function resolverTicket() {
         });
 
         // PASO 2 — Eliminar ticket
-        await fetch(WEBHOOK_URL, {
+        await fetch(METRICS_WEBHOOK_APP, {
             method: "POST",
             headers: HEADERS,
             body: JSON.stringify({
@@ -321,7 +323,7 @@ async function resolverTicket() {
 // 🔴 ELIMINAR TICKET
 async function deleteTicket(ticketId) {
     try {
-        await fetch(WEBHOOK_URL, {
+        await fetch(METRICS_WEBHOOK_APP, {
             method: "POST",
             headers: HEADERS,
             body: JSON.stringify({ PETICION: "eliminar ticket", ticket_id: ticketId })
@@ -334,16 +336,46 @@ async function deleteTicket(ticketId) {
 
 // 📊 ACTUALIZAR MÉTRICAS
 async function updateMetrics() {
+    const btn = document.getElementById("updateMetricsBtn");
+    btn.textContent = "Actualizando…";
+    btn.disabled = true;
+
     try {
-        await fetch(METRICS_WEBHOOK, {
-            method: "POST",
-            headers: HEADERS,
-            body: JSON.stringify({ PETICION: "ACTUALIZAR METRICAS" })
-        });
-        alert("Métricas actualizadas correctamente");
+        // Ejecutar los 3 en paralelo
+        await Promise.all([
+            // Webhook Sheets (sin petición)
+            fetch(METRICS_WEBHOOK_SHEETS, {
+                method: "POST",
+                headers: HEADERS,
+                body: JSON.stringify({})
+            }),
+            // Webhook App — Tickets
+            fetch(METRICS_WEBHOOK_APP, {
+                method: "POST",
+                headers: HEADERS,
+                body: JSON.stringify({ PETICION: "SOLICITAR TICKETS" })
+            }),
+            // Webhook App — Métricas
+            fetch(METRICS_WEBHOOK_APP, {
+                method: "POST",
+                headers: HEADERS,
+                body: JSON.stringify({ PETICION: "OBTENER METRICAS APP" })
+            })
+        ]);
+
+        btn.textContent = "✓ Actualizado";
+        setTimeout(() => {
+            btn.textContent = "Actualizar métricas";
+            btn.disabled = false;
+        }, 2000);
+
+        // Recargar tabla con datos frescos
+        loadTickets();
+
     } catch (error) {
         console.error("Error actualizando métricas:", error);
-        alert("Error al actualizar métricas");
+        btn.textContent = "Error — reintentar";
+        btn.disabled = false;
     }
 }
 
