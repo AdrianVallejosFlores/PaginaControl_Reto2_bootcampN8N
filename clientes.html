@@ -696,7 +696,7 @@ function renderTable() {
             <td class="td-nombre">${r.nombre||"—"}</td>
             <td class="td-ci">${r.ci||"—"}</td>
             <td class="td-correo">${r.correo||"—"}</td>
-            <td class="td-msg" title="${(r.mensaje||"").replace(/"/g,'&quot;')}">${r.mensaje||"—"}</td>
+            <td style="white-space:normal;word-break:break-word;min-width:200px;" title="${(r.mensaje||"").replace(/"/g,'&quot;')}">${r.mensaje||"—"}</td>
             <td><span class="urg-badge ${urgCls}">${r.urgencia||"—"}</span></td>
             <td class="sent-emoji" style="text-align:center">${SENTIMENTS[r.sentimiento]||"—"}</td>
             <td><span class="badge ${(r.estado||"").toLowerCase()}">${r.estado||"—"}</span></td>

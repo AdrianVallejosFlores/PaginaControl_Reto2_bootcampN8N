@@ -19,6 +19,29 @@
             font-size: 13px;
             border-bottom: 1px solid var(--border);
         }
+
+        .date-filters {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 0 4px;
+            flex-wrap: wrap;
+        }
+        .date-filters label {
+            font-size: 12px;
+            color: var(--muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .date-filters input[type="date"] {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+        }
         .agents-row-header {
             font-size: 11px; font-weight: 600; letter-spacing: 0.5px;
             text-transform: uppercase; color: var(--muted); padding: 10px 20px 8px;
@@ -168,6 +191,14 @@
                 <div class="page-title">Métricas del Sistema Multi-Agente</div>
                 <div class="page-sub" id="lastUpdated">Cargando datos…</div>
             </div>
+        </div>
+
+        <!-- FILTRO FECHAS -->
+        <div class="date-filters" style="margin-top:16px">
+            <label>Desde: <input type="date" id="dateFrom" onchange="applyFilters()"></label>
+            <label>Hasta: <input type="date" id="dateTo" onchange="applyFilters()"></label>
+            <button class="btn" onclick="clearDateFilters()">Limpiar fechas</button>
+            <span id="filterInfo" style="font-size:11px;color:var(--muted)"></span>
         </div>
 
         <!-- FILA 1 STATS -->
@@ -430,7 +461,8 @@ async function loadData() {
             throw new Error("No se encontraron agentes");
         }
 
-        render(agentes);
+        ALL_DATA = agentes;
+        applyFilters();
 
         document.getElementById("lastUpdated").textContent =
             "Actualizado: " + new Date().toLocaleTimeString("es-BO");
@@ -777,7 +809,7 @@ function renderInterTable(data) {
         <tr>
             <td class="mono">${r.id_ejec_workflow||"—"}</td>
             <td><span class="agente-pill ${meta.pillClass}">${r.agente_utilizado||"—"}</span></td>
-            <td style="color:var(--muted);font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.modelo_utilizado||"—"}</td>
+            <td style="color:var(--muted);font-size:11px;white-space:normal;word-break:break-word;max-width:200px">${r.modelo_utilizado||"—"}</td>
             <td>${(parseInt(r.total_tockens_entrada)||0).toLocaleString()}</td>
             <td>${(parseInt(r.total_tockens_salida)||0).toLocaleString()}</td>
             <td style="font-weight:600;color:var(--text)">${r.costo_estimado||"$0"}</td>
@@ -787,6 +819,45 @@ function renderInterTable(data) {
             <td style="white-space:nowrap;color:var(--muted)">${fmtFechaCorta(r.fecha_creacion)}</td>
         </tr>`;
     }).join("");
+}
+
+
+let ALL_DATA = [];
+
+function applyFilters() {
+    const dateFrom = document.getElementById("dateFrom").value;
+    const dateTo   = document.getElementById("dateTo").value;
+
+    let filtered = ALL_DATA;
+
+    if (dateFrom) {
+        filtered = filtered.filter(r => {
+            const f = new Date(r.fecha_creacion);
+            return f >= new Date(dateFrom);
+        });
+    }
+    if (dateTo) {
+        filtered = filtered.filter(r => {
+            const f = new Date(r.fecha_creacion);
+            return f <= new Date(dateTo + "T23:59:59");
+        });
+    }
+
+    const info = document.getElementById("filterInfo");
+    if (dateFrom || dateTo) {
+        info.textContent = `Mostrando ${filtered.length} de ${ALL_DATA.length} registros`;
+    } else {
+        info.textContent = "";
+    }
+
+    render(filtered);
+}
+
+function clearDateFilters() {
+    document.getElementById("dateFrom").value = "";
+    document.getElementById("dateTo").value = "";
+    document.getElementById("filterInfo").textContent = "";
+    render(ALL_DATA);
 }
 
 loadData();
