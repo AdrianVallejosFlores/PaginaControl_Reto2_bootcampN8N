@@ -113,6 +113,12 @@
             <a class="btn btn-primary"
                href="https://docs.google.com/spreadsheets/d/1DIZOee7j_iBkf1LUQKieNf01lJ9lQD4QNYqfUmyobhE/edit?usp=sharing"
                target="_blank">Ver Dashboard Google Sheet →</a>
+
+            <a class="btn btn-primary"
+                href="https://training.intersim.cloud/form/893bb11e-8663-46e0-8eaf-bb304b418286"
+                target="_blank">
+                Insertar Documentos (RAG) →
+            </a>
             <div class="avatar">AD</div>
         </div>
     </header>
@@ -127,9 +133,8 @@
         <a class="nav-item" href="clientes.html">
             <span class="icon">◎</span> Clientes Tickets Met.
         </a>
-        <a class="nav-item disabled" href="#">
+        <a class="nav-item" href="conversaciones.html">
             <span class="icon">◇</span> Conversaciones
-            <span class="nav-badge neutral">soon</span>
         </a>
         <div class="nav-section">Análisis</div>
         <a class="nav-item active" href="metricas_agentes.html">
@@ -300,16 +305,22 @@
                     <div class="panel-sub">Ranking de modelos por cantidad de interacciones</div>
                 </div>
             </div>
-            <div id="modelosPanel" style="padding:6px 20px 14px">
-                <div class="loading-row"><div class="skel" style="flex:1"></div></div>
-            </div>
 
-            <div style="padding: 10px 20px 0">
-                <canvas id="modelosChart" height="120"></canvas>
-            </div>
+            <!-- CONTENIDO LADO A LADO -->
+            <div style="display:grid;grid-template-columns: 1fr 1fr;gap:16px;padding:10px 20px 16px">
 
-            <div id="modelosPanel" style="padding:6px 20px 14px">
-                <div class="loading-row"><div class="skel" style="flex:1"></div></div>
+                <!-- LISTA -->
+                <div id="modelosPanel">
+                    <div class="loading-row">
+                        <div class="skel" style="flex:1"></div>
+                    </div>
+                </div>
+
+                <!-- GRÁFICO -->
+                <div style="display:flex;align-items:center">
+                    <canvas id="modelosChart" height="140"></canvas>
+                </div>
+
             </div>
         </div>
 
@@ -653,7 +664,7 @@ function renderModelos(data, total) {
 
     const COLORS = ["#5a9ed4","#4aad7a","#d4914a","#e05252","#a370d4","#d45a8e","#7a7a82"];
 
-    // ── RENDER LISTA (TU UI ORIGINAL) ──
+    // ── RENDER LISTA ──
     document.getElementById("modelosPanel").innerHTML = sorted.map(([nombre, count], i) => {
         const esSin = nombre.toLowerCase().includes("sin");
         const color = esSin ? "#3a3a3e" : COLORS[i % COLORS.length];
@@ -689,7 +700,7 @@ function renderModelos(data, total) {
     }).join("");
 
     // ── GRÁFICO ──
-    const labels = sorted.map(([nombre]) => nombre);
+    const labels = sorted.map(([nombre]) => nombre); // nombres reales
     const values = sorted.map(([_, count]) => count);
 
     const ctx = document.getElementById("modelosChart").getContext("2d");
@@ -700,9 +711,9 @@ function renderModelos(data, total) {
     }
 
     window.modelosChartInstance = new Chart(ctx, {
-        type: "bar", // 👉 cambia a "pie" si quieres torta
+        type: "bar",
         data: {
-            labels: labels,
+            labels: labels.map((_, i) => i + 1), // 👈 SOLO números
             datasets: [{
                 data: values,
                 backgroundColor: COLORS,
@@ -711,13 +722,35 @@ function renderModelos(data, total) {
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             plugins: {
-                legend: { display: false }
+                legend: { display: false },
+
+                // 👇 TOOLTIP INTELIGENTE
+                tooltip: {
+                    callbacks: {
+                        title: function(context) {
+                            const index = context[0].dataIndex;
+                            return labels[index]; // nombre real del modelo
+                        },
+                        label: function(context) {
+                            return "Interacciones: " + context.raw;
+                        }
+                    }
+                }
             },
             scales: {
+                x: {
+                    ticks: {
+                        color: "#888",
+                        font: { size: 10 }
+                    }
+                },
                 y: {
                     beginAtZero: true,
-                    ticks: { precision: 0 }
+                    ticks: {
+                        precision: 0
+                    }
                 }
             }
         }

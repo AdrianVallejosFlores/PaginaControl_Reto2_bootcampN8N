@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conversaciones — TecBolivia</title>
+
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+
+<style>
+
+/* KPIs */
+.kpi-row {
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:12px;
+    margin-bottom:16px;
+}
+
+.kpi {
+    padding:14px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.2));
+    border-radius:12px;
+    border:1px solid rgba(255,255,255,0.06);
+    position:relative;
+    overflow:hidden;
+}
+
+.kpi::before {
+    content:"";
+    position:absolute;
+    top:0;
+    left:0;
+    width:100%;
+    height:3px;
+    border-radius:12px 12px 0 0;
+}
+
+/* AZUL */
+.kpi:nth-child(1)::before {
+    background:#4da3ff;
+    box-shadow:0 0 10px #4da3ff;
+}
+
+/* NARANJA */
+.kpi:nth-child(4)::before {
+    background:#f4a261;
+    box-shadow:0 0 10px #887f77;
+}
+
+/* VERDE */
+.kpi:nth-child(3)::before {
+    background:#52c788;
+    box-shadow:0 0 10px #52c788;
+}
+
+/* ROJO */
+.kpi:nth-child(2)::before {
+    background:#ff4d4d;
+    box-shadow:0 0 10px #ff4d4d;
+}
+
+/* VERDE (positivo) */
+.kpi:nth-child(5)::before {
+    background:#2ecc71;
+    box-shadow:0 0 10px #2ecc71;
+}
+
+.kpi-label {
+    font-size:11px;
+    color:var(--muted);
+    text-transform:uppercase;
+}
+
+.kpi-value {
+    font-size:22px;
+    font-weight:800;
+    font-family:'Syne';
+}
+
+/* filtros */
+.filters {
+    display:flex;
+    gap:10px;
+    margin-bottom:16px;
+}
+
+.filters input {
+    background:var(--bg);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:6px 10px;
+    border-radius:6px;
+    font-size:12px;
+}
+
+/* tabla */
+.table-wrap {
+    border:1px solid var(--border);
+    border-radius:10px;
+    overflow:hidden;
+    background:var(--surface);
+}
+
+table {
+    width:100%;
+    border-collapse:collapse;
+    font-size:12px;
+}
+
+th {
+    padding:10px;
+    font-size:10px;
+    text-transform:uppercase;
+    color:var(--muted);
+    border-bottom:1px solid var(--border);
+}
+
+td {
+    padding:10px;
+    border-bottom:1px solid var(--border);
+}
+
+tr:hover td {
+    background:rgba(255,255,255,.03);
+}
+
+/* badges */
+.badge { padding:2px 8px; border-radius:10px; font-size:11px; }
+.ok { background:rgba(74,173,122,.15); color:var(--green); }
+.err { background:rgba(224,82,82,.15); color:var(--red); }
+
+/* scroll */
+.scroll { max-height:500px; overflow:auto; }
+
+</style>
+</head>
+
+<body>
+
+<div class="shell">
+
+<!-- TOPBAR -->
+<header class="topbar">
+    <div class="logo">TEC<span>Bolivia</span></div>
+    <div class="topbar-badge">E-Commerce Support</div>
+
+    <div class="topbar-right">
+        <button class="btn" onclick="load()">Actualizar métricas</button>
+        <a class="btn btn-primary"
+           href="https://docs.google.com/spreadsheets/d/1DIZOee7j_iBkf1LUQKieNf01lJ9lQD4QNYqfUmyobhE/edit"
+           target="_blank">
+           Ver Dashboard Google Sheet →
+        </a>
+        <a class="btn btn-primary"
+                href="https://training.intersim.cloud/form/893bb11e-8663-46e0-8eaf-bb304b418286"
+                target="_blank">
+                Insertar Documentos (RAG) →
+            </a>
+        <div class="avatar">AD</div>
+    </div>
+</header>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+    <div class="nav-section">General</div>
+
+    <a class="nav-item" href="index.html">
+        <span class="icon">◈</span> Resolver Tickets
+    </a>
+
+    <a class="nav-item" href="clientes.html">
+        <span class="icon">◎</span> Clientes Tickets Met.
+    </a>
+
+    <a class="nav-item active" href="conversaciones.html">
+        <span class="icon">◇</span> Conversaciones
+    </a>
+
+    <div class="nav-section">Análisis</div>
+
+    <a class="nav-item" href="metricas_agentes.html">
+        <span class="icon">∷</span> Métricas Agentes
+    </a>
+     <a class="nav-item disabled" href="#">
+            <span class="icon">≋</span> Reportes
+            <span class="nav-badge neutral">soon</span>
+        </a>
+        <div class="nav-section">Sistema</div>
+        <a class="nav-item disabled" href="#">
+            <span class="icon">⚙</span> Configuración
+            <span class="nav-badge neutral">soon</span>
+        </a>
+
+    <div class="sidebar-bottom">
+        <div class="nav-item"><span class="icon">◉</span> Admin</div>
+    </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+<nav class="breadcrumb">
+    <span class="bc-item bc-home">Inicio</span>
+    <span class="bc-sep">›</span>
+    <span class="bc-item bc-active">Conversaciones</span>
+</nav>
+
+<div class="page-header">
+    <div>
+        <div class="page-title">Detalle de Interacciones</div>
+        <div class="page-sub" id="lastUpdated">Cargando…</div>
+    </div>
+</div>
+
+<!-- KPIs -->
+<div class="kpi-row">
+    <div class="kpi">
+        <div class="kpi-label">Total</div>
+        <div class="kpi-value" id="kpiTotal">—</div>
+    </div>
+    <div class="kpi">
+        <div class="kpi-label">Sent. Alto</div>
+        <div class="kpi-value" id="kpiOk">—</div>
+    </div>
+    <div class="kpi">
+        <div class="kpi-label">Sent. Bajo</div>
+        <div class="kpi-value" id="kpiErr">—</div>
+    </div>
+    <div class="kpi">
+        <div class="kpi-label">Sent. Medio</div>
+        <div class="kpi-value" id="kpiCost">—</div>
+    </div>
+    <div class="kpi">
+        <div class="kpi-label">Top Cliente</div>
+        <div class="kpi-value" id="kpiTime">—</div>
+    </div>
+</div>
+
+<!-- TOP CLIENTES -->
+<div class="panel">
+    <div class="panel-header">
+        <div class="panel-title">Top clientes con más interacciones</div>
+    </div>
+    <div id="topClientes"></div>
+</div>
+
+<!-- filtro -->
+<div class="filters">
+    <input id="search" placeholder="Buscar conversación..." oninput="render()">
+</div>
+
+<!-- tabla -->
+<div class="panel">
+    <div class="panel-header">
+        <div class="panel-title">Interacciones</div>
+    </div>
+
+    <div class="table-wrap scroll">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Cliente</th>
+                    <th>Mensaje</th>
+                    <th>Respuesta</th>
+                    <th>Sentimiento</th>
+                    <th>Fecha</th>
+                </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+        </table>
+    </div>
+</div>
+
+</main>
+</div>
+
+<script>
+
+const WEBHOOK = "https://training.intersim.cloud/webhook/metricas_app";
+const HEADERS = { 
+    "Content-Type": "application/json", 
+    "x-api-key": "15252363avf$X" 
+};
+
+let DATA = [];
+
+// LOAD
+async function load(){
+    const res = await fetch(WEBHOOK,{
+        method:"POST",
+        headers:HEADERS,
+        body: JSON.stringify({ PETICION:"OBTENER METRICAS APP"})
+    });
+
+    let raw = await res.json();
+    let data = [];
+
+    if (Array.isArray(raw)) {
+        raw.forEach(item => {
+            const convs = item.conversaciones || item.json?.conversaciones;
+            if (Array.isArray(convs)) {
+                convs.forEach(c => {
+                    if (c.json?.item) data.push(c.json.item);
+                });
+            }
+        });
+    }
+
+    DATA = data;
+
+    computeKPIs();
+    render();
+    renderTopClientes();
+
+    document.getElementById("lastUpdated").textContent =
+        "Actualizado: " + new Date().toLocaleTimeString();
+}
+
+// KPIs
+function computeKPIs(){
+
+    const total = DATA.length;
+
+    const alto = DATA.filter(x => x.sentimiento === "ALTO").length;
+    const medio = DATA.filter(x => x.sentimiento === "MEDIO").length;
+    const bajo = DATA.filter(x => x.sentimiento === "BAJO").length;
+
+    const map = {};
+    DATA.forEach(x=>{
+        if(!map[x.cliente_id]){
+            map[x.cliente_id] = { nombre:x.cliente_nombre, total:0 };
+        }
+        map[x.cliente_id].total++;
+    });
+
+    const top = Object.values(map).sort((a,b)=>b.total-a.total);
+
+    document.getElementById("kpiTotal").textContent = total;
+    document.getElementById("kpiOk").textContent = alto;
+    document.getElementById("kpiErr").textContent = bajo;
+    document.getElementById("kpiCost").textContent = medio;
+    document.getElementById("kpiTime").textContent = top[0] ? `${top[0].nombre} (${top[0].total})` : "-";
+}
+
+// TOP CLIENTES
+function renderTopClientes(){
+
+    const map = {};
+
+    DATA.forEach(x => {
+        if (!map[x.cliente_id]) {
+            map[x.cliente_id] = {
+                nombre: x.cliente_nombre,
+                total: 0,
+                alto: 0,
+                medio: 0,
+                bajo: 0
+            };
+        }
+
+        map[x.cliente_id].total++;
+
+        if(x.sentimiento === "ALTO") map[x.cliente_id].alto++;
+        if(x.sentimiento === "MEDIO") map[x.cliente_id].medio++;
+        if(x.sentimiento === "BAJO") map[x.cliente_id].bajo++;
+    });
+
+    const top = Object.values(map)
+        .sort((a,b)=> b.total - a.total)
+        .slice(0,5);
+
+    document.getElementById("topClientes").innerHTML = top.map(c => `
+        <div style="padding:10px; border-bottom:1px solid var(--border)">
+            <div style="font-weight:600">${c.nombre}</div>
+            <div style="font-size:12px; color:var(--muted)">
+                ${c.total} interacciones
+            </div>
+
+            <div style="display:flex; gap:10px; font-size:11px; margin-top:4px">
+                <span style="color:var(--red)">▲ ${c.alto}</span>
+                <span style="color:var(--amber)">■ ${c.medio}</span>
+                <span style="color:var(--green)">● ${c.bajo}</span>
+            </div>
+        </div>
+    `).join("");
+}
+
+// TABLA
+function render(){
+
+    const search = document.getElementById("search").value.toLowerCase();
+
+    let rows = DATA.filter(r=>{
+        const txt = (r.mensaje + r.respuesta + r.cliente_nombre).toLowerCase();
+        return (!search || txt.includes(search));
+    });
+
+    rows.sort((a,b)=> new Date(b.fecha_respuesta) - new Date(a.fecha_respuesta));
+
+    document.getElementById("tbody").innerHTML = rows.map(r=>{
+
+        let cls = "";
+        if(r.sentimiento === "ALTO") cls = "err";
+        if(r.sentimiento === "BAJO") cls = "ok";
+
+        return `
+        <tr>
+            <td>${r.id}</td>
+            <td>${r.cliente_nombre}</td>
+            <td>${(r.mensaje||"").slice(0,40)}</td>
+            <td>${(r.respuesta||"").slice(0,60)}</td>
+            <td><span class="badge ${cls}">${r.sentimiento}</span></td>
+            <td>${new Date(r.fecha_respuesta).toLocaleString()}</td>
+        </tr>`;
+    }).join("");
+}
+
+load();
+
+</script>
+
+</body>
+</html>
